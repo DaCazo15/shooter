@@ -67,7 +67,7 @@ const handleSubmit = () => {
             <input
               v-model="form.nombre"
               type="text"
-              placeholder="Ej. Carlos"
+              placeholder="Carlos"
               required
               class="w-full px-3.5 py-2.5 text-xs bg-[#FAF8F6] border border-[#EADBDE] rounded-xl focus:ring-2 focus:ring-[#9E5A78] focus:outline-none"
             />
@@ -77,7 +77,7 @@ const handleSubmit = () => {
             <input
               v-model="form.apellido"
               type="text"
-              placeholder="Ej. Pérez"
+              placeholder="Pérez"
               class="w-full px-3.5 py-2.5 text-xs bg-[#FAF8F6] border border-[#EADBDE] rounded-xl focus:ring-2 focus:ring-[#9E5A78] focus:outline-none"
             />
           </div>
@@ -89,7 +89,7 @@ const handleSubmit = () => {
             <input
               v-model="form.telefono"
               type="text"
-              placeholder="Ej. +584120000000"
+              placeholder="+584120000000"
               required
               class="w-full px-3.5 py-2.5 text-xs bg-[#FAF8F6] border border-[#EADBDE] rounded-xl focus:ring-2 focus:ring-[#9E5A78] focus:outline-none"
             />
@@ -109,7 +109,7 @@ const handleSubmit = () => {
           <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">Mercancía / Productos que suministra</label>
           <textarea
             v-model="form.mercancia"
-            placeholder="Ej. Silicón, Herramientas, Empaques"
+            placeholder="Silicón, Herramientas, Empaques"
             rows="3"
             class="w-full px-3.5 py-2.5 text-xs bg-[#FAF8F6] border border-[#EADBDE] rounded-xl focus:ring-2 focus:ring-[#9E5A78] focus:outline-none resize-none"
           ></textarea>

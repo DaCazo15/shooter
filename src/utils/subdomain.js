@@ -25,7 +25,7 @@ export function getHostnameSubdomain() {
   }
 
   const parts = hostname.split('.')
-  // Si tiene al menos 3 partes (ej: tienda.pandibuy.com, mi-negocio.vercel.app)
+  // Si tiene al menos 3 partes (tienda.pandibuy.com, mi-negocio.vercel.app)
   if (parts.length >= 3) {
     const sub = parts[0].toLowerCase()
     const subdominiosReservados = ['www', 'app', 'admin', 'api', 'dashboard', 'preview', 'shooter']

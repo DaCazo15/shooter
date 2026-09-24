@@ -8,7 +8,7 @@ const router = createRouter({
     {
       path: '/',
       redirect: () => {
-        // Si se accede mediante un subdominio (ej: mitienda.pandibuy.com o mitienda.localhost)
+        // Si se accede mediante un subdominio (mitienda.pandibuy.com o mitienda.localhost)
         const hostSubdomain = getHostnameSubdomain()
         if (hostSubdomain) {
           return { name: 'public-web', params: { subdominio: hostSubdomain } }

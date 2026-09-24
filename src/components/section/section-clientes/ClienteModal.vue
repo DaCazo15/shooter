@@ -69,7 +69,7 @@ const handleSubmit = () => {
             <input
               v-model="form.nombre"
               type="text"
-              placeholder="Ej. Juan"
+              placeholder="Juan"
               required
               class="w-full px-3.5 py-2.5 text-xs bg-[#FAF8F6] border border-[#EADBDE] rounded-xl focus:ring-2 focus:ring-[#9E5A78] focus:outline-none"
             />
@@ -79,7 +79,7 @@ const handleSubmit = () => {
             <input
               v-model="form.apellido"
               type="text"
-              placeholder="Ej. Pérez"
+              placeholder="Pérez"
               class="w-full px-3.5 py-2.5 text-xs bg-[#FAF8F6] border border-[#EADBDE] rounded-xl focus:ring-2 focus:ring-[#9E5A78] focus:outline-none"
             />
           </div>
@@ -91,7 +91,7 @@ const handleSubmit = () => {
             <input
               v-model="form.telefono"
               type="tel"
-              placeholder="Ej. 584120000000"
+              placeholder="584120000000"
               required
               class="w-full px-3.5 py-2.5 text-xs bg-[#FAF8F6] border border-[#EADBDE] rounded-xl focus:ring-2 focus:ring-[#9E5A78] focus:outline-none"
             />

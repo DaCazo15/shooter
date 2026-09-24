@@ -110,7 +110,7 @@ const handleSubmit = () => {
             <input
               v-model="form.nombre"
               type="text"
-              placeholder="Ej. Resina Epóxica, Cinta Rosa"
+              placeholder="Resina Epóxica, Cinta Rosa"
               required
               class="w-full px-3.5 py-2.5 text-xs bg-[#FAF8F6] border border-[#EADBDE] rounded-xl focus:ring-2 focus:ring-[#9E5A78] focus:outline-none"
             />
@@ -208,7 +208,7 @@ const handleSubmit = () => {
           <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">Notas / Detalles adicionales</label>
           <textarea
             v-model="form.notas"
-            placeholder="Ej. Ubicación en estante B, código de lote, etc."
+            placeholder="Ubicación en estante B, código de lote, etc."
             rows="2"
             class="w-full px-3.5 py-2.5 text-xs bg-[#FAF8F6] border border-[#EADBDE] rounded-xl focus:ring-2 focus:ring-[#9E5A78] focus:outline-none resize-none"
           ></textarea>

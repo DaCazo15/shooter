@@ -165,7 +165,7 @@ const submitCalculo = async () => {
             type="number"
             step="0.25"
             min="0"
-            placeholder="Ej: 2.5 horas"
+            placeholder="2.5 horas"
             class="w-full px-3 py-2 text-xs bg-white border border-[#EADBDE] rounded-xl focus:ring-2 focus:ring-[#9E5A78] focus:outline-none"
           />
         </div>
@@ -189,7 +189,7 @@ const submitCalculo = async () => {
             type="number"
             step="0.5"
             min="0"
-            placeholder="Ej: 2 $"
+            placeholder="2 $"
             class="w-full px-3 py-2 text-xs bg-white border border-[#EADBDE] rounded-xl focus:ring-2 focus:ring-[#9E5A78] focus:outline-none"
           />
         </div>
@@ -230,7 +230,7 @@ const submitCalculo = async () => {
                   <input
                     v-model="item.nombre"
                     type="text"
-                    placeholder="Ej: Tela lino, Hilo, Cierre"
+                    placeholder="Tela lino, Hilo, Cierre"
                     class="w-full px-2.5 py-1.5 bg-[#FAF8F6] border border-[#EADBDE] rounded-lg text-xs"
                   />
                 </td>

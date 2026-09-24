@@ -93,7 +93,7 @@ const handleGuardar = async () => {
               v-model="formData.businessName"
               type="text"
               required
-              placeholder="Ej: Pandibuy Atelier"
+              placeholder="Pandibuy Atelier"
               class="w-full px-3.5 py-2.5 text-xs bg-[#FAF8F6] border border-[#EADBDE] rounded-xl focus:ring-2 focus:ring-[#9E5A78] focus:outline-none font-medium"
             />
           </div>
@@ -104,7 +104,7 @@ const handleGuardar = async () => {
               v-model="formData.displayName"
               type="text"
               required
-              placeholder="Ej: Valeria Pandi"
+              placeholder="Valeria Pandi"
               class="w-full px-3.5 py-2.5 text-xs bg-[#FAF8F6] border border-[#EADBDE] rounded-xl focus:ring-2 focus:ring-[#9E5A78] focus:outline-none font-medium"
             />
           </div>
