@@ -1,123 +1,143 @@
 <script setup>
-import { onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
+import { useInventario } from '../../../composable/useInventario'
 import { useProveedores } from '../../../composable/useProveedores'
+import InventarioStockView from './InventarioStockView.vue'
+import InventarioStockModal from './InventarioStockModal.vue'
+import InventarioProveedoresView from './InventarioProveedoresView.vue'
 import InventarioModal from './InventarioModal.vue'
 
+// Pestaña activa ('inventario' | 'proveedores')
+const pestañaActiva = ref('inventario')
+
+// Composable de Inventario / Materiales
+const {
+  materiales,
+  cargando: cargandoInventario,
+  modalAbierto: modalInventarioAbierto,
+  materialEditar,
+  obtenerMateriales,
+  abrirModalCrear: abrirModalCrearMaterial,
+  abrirModalEditar: abrirModalEditarMaterial,
+  cerrarModal: cerrarModalMaterial,
+  guardarMaterial,
+  eliminarMaterial
+} = useInventario()
+
+// Composable de Proveedores
 const {
   proveedores,
-  cargando,
-  modalAbierto,
+  cargando: cargandoProveedores,
+  modalAbierto: modalProveedorAbierto,
   proveedorEditar,
   obtenerProveedores,
-  abrirModalCrear,
-  abrirModalEditar,
-  cerrarModal,
+  abrirModalCrear: abrirModalCrearProveedor,
+  abrirModalEditar: abrirModalEditarProveedor,
+  cerrarModal: cerrarModalProveedor,
   guardarProveedor,
   eliminarProveedor,
   generarLinkWhatsApp
 } = useProveedores()
 
-let desuscribir = null
+let desuscribirInventario = null
+let desuscribirProveedores = null
 
 onMounted(() => {
-  desuscribir = obtenerProveedores()
+  desuscribirInventario = obtenerMateriales()
+  desuscribirProveedores = obtenerProveedores()
 })
 
 onUnmounted(() => {
-  if (desuscribir) desuscribir()
+  if (desuscribirInventario) desuscribirInventario()
+  if (desuscribirProveedores) desuscribirProveedores()
 })
 </script>
 
 <template>
-  <div class="max-w-6xl mx-auto p-6 bg-white rounded-lg shadow-md">
-    <!-- Header de la sección -->
-    <div class="flex justify-between items-center mb-6">
+  <div class="space-y-6">
+    <!-- Header Principal & Alternador de Pestañas -->
+    <div class="bg-white p-6 rounded-2xl border border-[#EADBDE] shadow-xs flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
       <div>
-        <h2 class="text-2xl font-bold text-gray-800">Proveedores</h2>
-        <p class="text-sm text-gray-500">Gestión de contactos y suministro de mercancía</p>
+        <h1 class="text-2xl font-bold font-serif-title text-[#1F1824]">Inventario & Proveedores</h1>
+        <p class="text-xs text-gray-500 mt-1">Control de stock de materiales, insumos y directorio de proveedores</p>
       </div>
-      <button
-        type="button"
-        class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition flex items-center gap-2"
-        @click="abrirModalCrear"
-      >
-        <i class="bi bi-person-plus-fill"></i> Registrar Proveedor
-      </button>
-    </div>
 
-    <!-- Lista de Proveedores -->
-    <div v-if="cargando && !proveedores.length" class="text-center py-8 text-gray-500">
-      Cargando proveedores...
-    </div>
-
-    <div v-else-if="!proveedores.length" class="text-center py-8 text-gray-400">
-      No hay proveedores registrados aún.
-    </div>
-
-    <div v-else class="grid grid-cols-1 md:grid-cols-2 gap-4">
-      <div
-        v-for="prov in proveedores"
-        :key="prov.id"
-        class="border border-gray-200 rounded-xl p-5 bg-gray-50 hover:shadow-md transition flex flex-col justify-between"
-      >
-        <div>
-          <div class="flex justify-between items-start mb-2">
-            <div>
-              <h3 class="text-lg font-bold text-gray-800">
-                {{ prov.nombre }} {{ prov.apellido }}
-              </h3>
-              <p class="text-xs text-gray-500">{{ prov.correo }}</p>
-            </div>
-            <!-- Botón WhatsApp -->
-            <a
-              :href="generarLinkWhatsApp(prov.telefono, prov.nombre)"
-              target="_blank"
-              rel="noopener noreferrer"
-              class="bg-emerald-500 hover:bg-emerald-600 text-white text-xs px-3 py-1.5 rounded-full flex items-center gap-1.5 font-medium transition"
-            >
-              <i class="bi bi-whatsapp"></i> Chat
-            </a>
-          </div>
-
-          <div class="my-3">
-            <span class="text-xs text-gray-400 font-semibold uppercase">Teléfono</span>
-            <p class="text-sm text-gray-700 font-medium">{{ prov.telefono }}</p>
-          </div>
-
-          <div>
-            <span class="text-xs text-gray-400 font-semibold uppercase">Mercancía</span>
-            <p class="text-sm text-gray-600 bg-white p-2 rounded border border-gray-100 mt-1">
-              {{ prov.mercancia }}
-            </p>
-          </div>
-        </div>
-
-        <!-- Acciones Editar / Eliminar -->
-        <div class="flex justify-end gap-2 mt-4 pt-3 border-t border-gray-200">
-          <button
-            type="button"
-            class="text-blue-600 hover:text-blue-800 text-sm font-medium px-2 py-1 flex items-center gap-1"
-            @click="abrirModalEditar(prov)"
+      <!-- Selector de Pestañas / Tabs -->
+      <div class="inline-flex p-1 bg-[#FAF8F6] border border-[#EADBDE] rounded-xl self-stretch md:self-auto">
+        <button
+          type="button"
+          @click="pestañaActiva = 'inventario'"
+          class="flex-1 md:flex-initial px-4 py-2 rounded-lg text-xs font-bold transition flex items-center justify-center gap-2"
+          :class="pestañaActiva === 'inventario'
+            ? 'bg-white text-[#9E5A78] shadow-xs border border-[#EADBDE]'
+            : 'text-gray-500 hover:text-[#1F1824]'"
+        >
+          <i class="bi bi-box-seam"></i>
+          <span>Stock de Insumos</span>
+          <span
+            class="px-1.5 py-0.5 rounded-full text-[10px]"
+            :class="pestañaActiva === 'inventario' ? 'bg-[#F7EFE9] text-[#9E5A78]' : 'bg-gray-200 text-gray-600'"
           >
-            <i class="bi bi-pencil"></i> Editar
-          </button>
-          <button
-            type="button"
-            class="text-red-600 hover:text-red-800 text-sm font-medium px-2 py-1 flex items-center gap-1"
-            @click="eliminarProveedor(prov.id)"
+            {{ materiales.length }}
+          </span>
+        </button>
+
+        <button
+          type="button"
+          @click="pestañaActiva = 'proveedores'"
+          class="flex-1 md:flex-initial px-4 py-2 rounded-lg text-xs font-bold transition flex items-center justify-center gap-2"
+          :class="pestañaActiva === 'proveedores'
+            ? 'bg-white text-[#9E5A78] shadow-xs border border-[#EADBDE]'
+            : 'text-gray-500 hover:text-[#1F1824]'"
+        >
+          <i class="bi bi-truck"></i>
+          <span>Proveedores</span>
+          <span
+            class="px-1.5 py-0.5 rounded-full text-[10px]"
+            :class="pestañaActiva === 'proveedores' ? 'bg-[#F7EFE9] text-[#9E5A78]' : 'bg-gray-200 text-gray-600'"
           >
-            <i class="bi bi-trash"></i> Eliminar
-          </button>
-        </div>
+            {{ proveedores.length }}
+          </span>
+        </button>
       </div>
     </div>
 
-    <!-- Modal de Formulario -->
-    <ProveedorModal
-      :mostrar="modalAbierto"
+    <!-- Vista de Stock / Materiales -->
+    <InventarioStockView
+      v-if="pestañaActiva === 'inventario'"
+      :materiales="materiales"
+      :cargando="cargandoInventario"
+      @crear="abrirModalCrearMaterial"
+      @editar="abrirModalEditarMaterial"
+      @eliminar="eliminarMaterial"
+    />
+
+    <!-- Vista de Proveedores -->
+    <InventarioProveedoresView
+      v-else-if="pestañaActiva === 'proveedores'"
+      :proveedores="proveedores"
+      :cargando="cargandoProveedores"
+      :generar-link-whats-app="generarLinkWhatsApp"
+      @crear="abrirModalCrearProveedor"
+      @editar="abrirModalEditarProveedor"
+      @eliminar="eliminarProveedor"
+    />
+
+    <!-- Modales -->
+    <InventarioStockModal
+      :mostrar="modalInventarioAbierto"
+      :material="materialEditar"
+      :proveedores="proveedores"
+      :cargando="cargandoInventario"
+      @cerrar="cerrarModalMaterial"
+      @guardar="guardarMaterial"
+    />
+
+    <InventarioModal
+      :mostrar="modalProveedorAbierto"
       :proveedor="proveedorEditar"
-      :cargando="cargando"
-      @cerrar="cerrarModal"
+      :cargando="cargandoProveedores"
+      @cerrar="cerrarModalProveedor"
       @guardar="guardarProveedor"
     />
   </div>

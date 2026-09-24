@@ -1,14 +1,37 @@
 import { ref, computed } from 'vue'
-import { formData } from '../components/section/section-calculadora/config/config.js'
 import { db } from '../config/firestore.js'
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore'
+import { collection, addDoc, getDocs, orderBy, query, limit, serverTimestamp } from 'firebase/firestore'
 
 export function useCalculadora() {
-  const items = ref([{ id: Date.now() }])
+  const nombreProyecto = ref('')
+  const cantidadProduccion = ref(1)
+  const margenGanancia = ref(40) // 40% de margen por defecto
+  const horasTrabajo = ref(1.5)
+  const precioHora = ref(8)
+  const costoEmpaqueEnvio = ref(2.5)
+
+  const items = ref([
+    {
+      id: 1,
+      nombre: 'Materia prima base / Tela / Insumo',
+      precioPaquete: 25,
+      unidadesPaquete: 10,
+      cantidadUso: 1
+    }
+  ])
+
+  const historial = ref([])
   const cargando = ref(false)
+  const guardando = ref(false)
 
   const agregarItem = () => {
-    items.value.push({ id: Date.now() })
+    items.value.push({
+      id: Date.now(),
+      nombre: '',
+      precioPaquete: 0,
+      unidadesPaquete: 1,
+      cantidadUso: 1
+    })
   }
 
   const eliminarItem = (index) => {
@@ -17,86 +40,166 @@ export function useCalculadora() {
     }
   }
 
-  // 1. Costo de UNA sola unidad dentro del paquete (Precio / Unidades del paquete)
-  const calcularPrecioUnitario = (index) => {
-    const precioPaquete = parseFloat(formData.value?.[`precioItem_${index}`]) || 0
-    const unidadesPorPaquete = parseFloat(formData.value?.[`cantidadPaquete_${index}`]) || 0
-
-    if (unidadesPorPaquete === 0) return 0
-    return precioPaquete / unidadesPorPaquete
+  // Costo unitario de un solo insumo
+  const calcularCostoUnitario = (item) => {
+    const precio = parseFloat(item.precioPaquete) || 0
+    const unidades = parseFloat(item.unidadesPaquete) || 1
+    if (unidades <= 0) return 0
+    return precio / unidades
   }
 
-  // 2. Subtotal consumido por este ítem (Costo Unitario * Unidades a Usar)
-  const calcularSubtotalFila = (index) => {
-    const costoUnitario = calcularPrecioUnitario(index)
-    const unidadesUsadas = parseFloat(formData.value?.[`cantidadUso_${index}`]) || 0
-
-    return costoUnitario * unidadesUsadas
+  // Costo del insumo para una sola unidad producida
+  const calcularSubtotalItem = (item) => {
+    const costoUnit = calcularCostoUnitario(item)
+    const uso = parseFloat(item.cantidadUso) || 0
+    return costoUnit * uso
   }
 
-  // 3. Suma de los subtotales de uso de todos los ítems
-  const subtotalGeneral = computed(() => {
-    return items.value.reduce((acc, _, index) => {
-      return acc + calcularSubtotalFila(index)
-    }, 0)
+  // Costo total de materiales por unidad producida
+  const costoMaterialesUnitario = computed(() => {
+    return items.value.reduce((acc, item) => acc + calcularSubtotalItem(item), 0)
   })
 
-  // 4. Total Final aplicando la cantidad global de producciones y el margen (%)
-  const totalFinal = computed(() => {
-    const base = subtotalGeneral.value
-    const multiplicadorGlobal = parseFloat(formData.value?.cantidad) || 1
-    const porcentaje = parseFloat(formData.value?.customPorcentaje) || 0
-
-    const costoInversionBase = base * multiplicadorGlobal
-    return costoInversionBase + (costoInversionBase * (porcentaje / 100))
+  // Costo de mano de obra por unidad producida
+  const costoManoObraUnitario = computed(() => {
+    const horas = parseFloat(horasTrabajo.value) || 0
+    const tarifa = parseFloat(precioHora.value) || 0
+    const cant = parseFloat(cantidadProduccion.value) || 1
+    return (horas * tarifa) / cant
   })
 
-  // Persistencia en Firestore
-  const guardarCalculo = async (data) => {
-    cargando.value = true
+  // Costo de empaque y gastos indirectos por unidad
+  const costoIndirectoUnitario = computed(() => {
+    return parseFloat(costoEmpaqueEnvio.value) || 0
+  })
 
-    const itemsProcesados = items.value.map((_, index) => ({
-      nombre: data[`nombreItem_${index}`] || '',
-      unidadesPorPaquete: parseFloat(data[`cantidadPaquete_${index}`]) || 0,
-      unidadesUsadas: parseFloat(data[`cantidadUso_${index}`]) || 0,
-      precioPaquete: parseFloat(data[`precioItem_${index}`]) || 0,
-      paquetesComprados: parseFloat(data[`cantidadItem_${index}`]) || 0,
-      costoUnitario: calcularPrecioUnitario(index),
-      subtotalGastoReal: calcularSubtotalFila(index)
-    }))
+  // Costo de Producción Total por Unidad
+  const costoTotalUnitario = computed(() => {
+    return costoMaterialesUnitario.value + costoManoObraUnitario.value + costoIndirectoUnitario.value
+  })
 
-    const documento = {
-      cliente: data.nombre || '',
-      cantidadProduccion: parseFloat(data.cantidad) || 1,
-      porcentajePersonalizado: parseFloat(data.customPorcentaje) || 0,
-      subtotalUsoBase: subtotalGeneral.value,
-      totalGastoInversion: totalFinal.value,
-      items: itemsProcesados,
-      fechaCreacion: serverTimestamp()
+  // Costo Total del Lote (para toda la cantidad de producción)
+  const costoTotalLote = computed(() => {
+    const cant = parseFloat(cantidadProduccion.value) || 1
+    return costoTotalUnitario.value * cant
+  })
+
+  // Precio de Venta al Público (PVP) Sugerido por Unidad con margen aplicado
+  const pvpSugeridoUnitario = computed(() => {
+    const costo = costoTotalUnitario.value
+    const margen = parseFloat(margenGanancia.value) || 0
+    if (margen >= 100) return costo * 2
+    // Fórmula de margen sobre venta: Costo / (1 - (Margen / 100))
+    // O markup: Costo * (1 + (Margen / 100))
+    return costo * (1 + (margen / 100))
+  })
+
+  // Ganancia Neta por Unidad
+  const gananciaNetaUnitaria = computed(() => {
+    return pvpSugeridoUnitario.value - costoTotalUnitario.value
+  })
+
+  // Ganancia Total Esperada por el Lote Completo
+  const gananciaTotalLote = computed(() => {
+    const cant = parseFloat(cantidadProduccion.value) || 1
+    return gananciaNetaUnitaria.value * cant
+  })
+
+  // Total Facturación Esperada
+  const facturacionTotalLote = computed(() => {
+    const cant = parseFloat(cantidadProduccion.value) || 1
+    return pvpSugeridoUnitario.value * cant
+  })
+
+  // Guardar cálculo
+  const guardarCalculo = async () => {
+    if (!nombreProyecto.value) {
+      nombreProyecto.value = 'Presupuesto ' + new Date().toLocaleDateString()
+    }
+    guardando.value = true
+
+    const calculoDoc = {
+      nombre: nombreProyecto.value,
+      cantidadProduccion: parseFloat(cantidadProduccion.value) || 1,
+      margenGanancia: parseFloat(margenGanancia.value) || 0,
+      horasTrabajo: parseFloat(horasTrabajo.value) || 0,
+      precioHora: parseFloat(precioHora.value) || 0,
+      costoEmpaqueEnvio: parseFloat(costoEmpaqueEnvio.value) || 0,
+      costoMaterialesUnitario: costoMaterialesUnitario.value,
+      costoManoObraUnitario: costoManoObraUnitario.value,
+      costoTotalUnitario: costoTotalUnitario.value,
+      costoTotalLote: costoTotalLote.value,
+      pvpSugeridoUnitario: pvpSugeridoUnitario.value,
+      gananciaNetaUnitaria: gananciaNetaUnitaria.value,
+      gananciaTotalLote: gananciaTotalLote.value,
+      items: items.value.map(i => ({
+        nombre: i.nombre,
+        precioPaquete: parseFloat(i.precioPaquete) || 0,
+        unidadesPaquete: parseFloat(i.unidadesPaquete) || 1,
+        cantidadUso: parseFloat(i.cantidadUso) || 0,
+        costoCalculado: calcularSubtotalItem(i)
+      })),
+      fecha: new Date().toISOString()
     }
 
     try {
-      const docRef = await addDoc(collection(db, 'calculos'), documento)
-      console.log('Documento guardado con ID:', docRef.id)
-      alert('¡Cálculo de inversión guardado exitosamente!')
-    } catch (error) {
-      console.error('Error al guardar en Firestore:', error)
-      alert('Error al guardar en la base de datos.')
+      if (db) {
+        await addDoc(collection(db, 'calculos'), {
+          ...calculoDoc,
+          fechaServidor: serverTimestamp()
+        })
+      }
+      historial.value.unshift({ id: Date.now(), ...calculoDoc })
+      return true
+    } catch (e) {
+      console.warn('Guardado offline en historial local:', e)
+      historial.value.unshift({ id: Date.now(), ...calculoDoc })
+      return true
+    } finally {
+      guardando.value = false
+    }
+  }
+
+  const cargarHistorial = async () => {
+    cargando.value = true
+    try {
+      if (db) {
+        const q = query(collection(db, 'calculos'), orderBy('fechaServidor', 'desc'), limit(10))
+        const snap = await getDocs(q)
+        historial.value = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }))
+      }
+    } catch (e) {
+      console.warn('No se pudo cargar historial de Firestore:', e)
     } finally {
       cargando.value = false
     }
   }
 
   return {
+    nombreProyecto,
+    cantidadProduccion,
+    margenGanancia,
+    horasTrabajo,
+    precioHora,
+    costoEmpaqueEnvio,
     items,
+    historial,
     cargando,
-    formData,
-    totalFinal,
-    subtotalGeneral,
+    guardando,
+    costoMaterialesUnitario,
+    costoManoObraUnitario,
+    costoIndirectoUnitario,
+    costoTotalUnitario,
+    costoTotalLote,
+    pvpSugeridoUnitario,
+    gananciaNetaUnitaria,
+    gananciaTotalLote,
+    facturacionTotalLote,
     agregarItem,
     eliminarItem,
-    calcularPrecioUnitario,
-    calcularSubtotalFila,
-    guardarCalculo
+    calcularCostoUnitario,
+    calcularSubtotalItem,
+    guardarCalculo,
+    cargarHistorial
   }
 }

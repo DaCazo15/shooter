@@ -1,5 +1,5 @@
 <script setup>
-import { computed } from 'vue'
+import { ref, watch } from 'vue'
 
 const props = defineProps({
   mostrar: Boolean,
@@ -9,123 +9,132 @@ const props = defineProps({
 
 const emit = defineEmits(['cerrar', 'guardar'])
 
-// Pre-llenar datos si es edición
-const formDataInicial = computed(() => {
-  if (props.proveedor) {
-    return {
-      nombre: props.proveedor.nombre || '',
-      apellido: props.proveedor.apellido || '',
-      telefono: props.proveedor.telefono || '',
-      correo: props.proveedor.correo || '',
-      mercancia: props.proveedor.mercancia || ''
-    }
-  }
-  return {
-    nombre: '',
-    apellido: '',
-    telefono: '',
-    correo: '',
-    mercancia: ''
-  }
+const form = ref({
+  nombre: '',
+  apellido: '',
+  telefono: '',
+  correo: '',
+  mercancia: ''
 })
 
-const handleSubmit = (data) => {
-  emit('guardar', data)
+watch(() => props.proveedor, (prov) => {
+  if (prov) {
+    form.value = {
+      nombre: prov.nombre || '',
+      apellido: prov.apellido || '',
+      telefono: prov.telefono || '',
+      correo: prov.correo || '',
+      mercancia: prov.mercancia || ''
+    }
+  } else {
+    form.value = { nombre: '', apellido: '', telefono: '', correo: '', mercancia: '' }
+  }
+}, { immediate: true })
+
+const handleSubmit = () => {
+  if (!form.value.nombre || !form.value.telefono) return
+  emit('guardar', { ...form.value })
 }
 </script>
 
 <template>
   <div
     v-if="mostrar"
-    class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+    class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
+    @click.self="emit('cerrar')"
   >
-    <div class="w-full max-w-lg bg-white rounded-xl shadow-xl overflow-hidden">
-      <!-- Encabezado Modal -->
-      <div class="flex justify-between items-center px-6 py-4 bg-gray-800 text-white">
-        <h3 class="text-lg font-bold">
-          {{ proveedor ? 'Editar Proveedor' : 'Nuevo Proveedor' }}
-        </h3>
-        <button
-          type="button"
-          class="text-gray-400 hover:text-white text-xl"
-          @click="emit('cerrar')"
-        >
-          &times;
+    <div class="w-full max-w-lg bg-white rounded-2xl shadow-2xl overflow-hidden">
+      <!-- Encabezado -->
+      <div class="flex justify-between items-center px-6 py-4 bg-[#1F1824]">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-lg bg-[#9E5A78] flex items-center justify-center text-white text-sm">
+            <i class="bi bi-truck"></i>
+          </div>
+          <h3 class="text-sm font-bold text-[#FAF8F6]">
+            {{ proveedor ? 'Editar Proveedor' : 'Nuevo Proveedor' }}
+          </h3>
+        </div>
+        <button @click="emit('cerrar')" class="text-gray-400 hover:text-white transition">
+          <i class="bi bi-x-lg"></i>
         </button>
       </div>
 
-      <!-- Formulario con FormKit -->
-      <div class="p-6">
-        <FormKit
-          type="form"
-          :value="formDataInicial"
-          :actions="false"
-          @submit="handleSubmit"
-        >
-          <div class="grid grid-cols-2 gap-4">
-            <FormKit
+      <!-- Formulario -->
+      <form @submit.prevent="handleSubmit" class="p-6 space-y-4">
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">Nombre *</label>
+            <input
+              v-model="form.nombre"
               type="text"
-              name="nombre"
-              label="Nombre"
               placeholder="Ej. Carlos"
-              validation="required|length:2"
+              required
+              class="w-full px-3.5 py-2.5 text-xs bg-[#FAF8F6] border border-[#EADBDE] rounded-xl focus:ring-2 focus:ring-[#9E5A78] focus:outline-none"
             />
-            <FormKit
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">Apellido</label>
+            <input
+              v-model="form.apellido"
               type="text"
-              name="apellido"
-              label="Apellido"
               placeholder="Ej. Pérez"
-              validation="required|length:2"
+              class="w-full px-3.5 py-2.5 text-xs bg-[#FAF8F6] border border-[#EADBDE] rounded-xl focus:ring-2 focus:ring-[#9E5A78] focus:outline-none"
             />
           </div>
+        </div>
 
-          <div class="grid grid-cols-2 gap-4 mt-3">
-            <FormKit
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">Teléfono *</label>
+            <input
+              v-model="form.telefono"
               type="text"
-              name="telefono"
-              label="Teléfono"
               placeholder="Ej. +584120000000"
-              validation="required"
+              required
+              class="w-full px-3.5 py-2.5 text-xs bg-[#FAF8F6] border border-[#EADBDE] rounded-xl focus:ring-2 focus:ring-[#9E5A78] focus:outline-none"
             />
-            <FormKit
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">Correo</label>
+            <input
+              v-model="form.correo"
               type="email"
-              name="correo"
-              label="Correo electrónico"
               placeholder="proveedor@correo.com"
-              validation="required|email"
+              class="w-full px-3.5 py-2.5 text-xs bg-[#FAF8F6] border border-[#EADBDE] rounded-xl focus:ring-2 focus:ring-[#9E5A78] focus:outline-none"
             />
           </div>
+        </div>
 
-          <div class="mt-3">
-            <FormKit
-              type="textarea"
-              name="mercancia"
-              label="Mercancía / Productos que suministra"
-              placeholder="Ej. Silicón, Herramientas, Empaques"
-              rows="3"
-              validation="required"
-            />
-          </div>
+        <div>
+          <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">Mercancía / Productos que suministra</label>
+          <textarea
+            v-model="form.mercancia"
+            placeholder="Ej. Silicón, Herramientas, Empaques"
+            rows="3"
+            class="w-full px-3.5 py-2.5 text-xs bg-[#FAF8F6] border border-[#EADBDE] rounded-xl focus:ring-2 focus:ring-[#9E5A78] focus:outline-none resize-none"
+          ></textarea>
+        </div>
 
-          <!-- Botones de Acción -->
-          <div class="flex justify-end gap-3 mt-6">
-            <button
-              type="button"
-              class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition"
-              @click="emit('cerrar')"
-            >
-              Cancelar
-            </button>
-            <button
-              type="submit"
-              :disabled="cargando"
-              class="px-5 py-2 bg-emerald-600 text-white font-bold rounded-lg hover:bg-emerald-700 disabled:bg-emerald-400 transition"
-            >
-              {{ cargando ? 'Guardando...' : 'Guardar' }}
-            </button>
-          </div>
-        </FormKit>
-      </div>
+        <!-- Botones -->
+        <div class="flex justify-end gap-3 pt-2">
+          <button
+            type="button"
+            @click="emit('cerrar')"
+            class="px-4 py-2.5 bg-gray-100 text-gray-600 text-xs font-bold rounded-xl hover:bg-gray-200 transition"
+          >
+            Cancelar
+          </button>
+          <button
+            type="submit"
+            :disabled="cargando"
+            class="px-5 py-2.5 bg-[#9E5A78] hover:bg-[#864662] text-white text-xs font-bold rounded-xl shadow-sm transition flex items-center gap-2 disabled:opacity-50"
+          >
+            <i v-if="cargando" class="bi bi-arrow-repeat animate-spin"></i>
+            <i v-else class="bi bi-check-lg"></i>
+            <span>{{ cargando ? 'Guardando...' : 'Guardar' }}</span>
+          </button>
+        </div>
+      </form>
     </div>
   </div>
 </template>

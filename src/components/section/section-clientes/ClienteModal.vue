@@ -1,6 +1,5 @@
 <script setup>
-import { watch } from 'vue'
-import { formData } from './config/config' 
+import { ref, watch } from 'vue'
 
 const props = defineProps({
   mostrar: Boolean,
@@ -10,120 +9,145 @@ const props = defineProps({
 
 const emit = defineEmits(['cerrar', 'guardar'])
 
-// Cargar datos en el formulario si estamos editando
-watch(() => props.cliente, (nuevoCliente) => {
-  if (nuevoCliente) {
-    formData.value = { ...nuevoCliente }
-  } else {
-    formData.value = {
-      nombre: '',
-      apellido: '',
-      telefono: '',
-      correo: '',
-      direccion: '',
-      cantidadPedidos: 0
+const form = ref({
+  nombre: '',
+  apellido: '',
+  telefono: '',
+  correo: '',
+  direccion: '',
+  cantidadPedidos: 0
+})
+
+watch(() => props.cliente, (c) => {
+  if (c) {
+    form.value = {
+      nombre: c.nombre || '',
+      apellido: c.apellido || '',
+      telefono: c.telefono || '',
+      correo: c.correo || '',
+      direccion: c.direccion || '',
+      cantidadPedidos: c.cantidadPedidos || 0
     }
+  } else {
+    form.value = { nombre: '', apellido: '', telefono: '', correo: '', direccion: '', cantidadPedidos: 0 }
   }
 }, { immediate: true })
 
-const handleSubmit = (data) => {
-  emit('guardar', data)
+const handleSubmit = () => {
+  if (!form.value.nombre || !form.value.telefono) return
+  emit('guardar', { ...form.value })
 }
 </script>
 
 <template>
-  <div 
-    v-if="mostrar" 
-    class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+  <div
+    v-if="mostrar"
+    class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+    @click.self="emit('cerrar')"
   >
-    <div class="bg-white rounded-xl shadow-xl w-full max-w-lg overflow-hidden">
-      <div class="bg-gray-800 text-white px-6 py-4 flex justify-between items-center">
-        <h3 class="text-lg font-bold">
-          {{ cliente ? 'Editar Cliente' : 'Nuevo Cliente' }}
-        </h3>
-        <button 
-          type="button" 
-          @click="emit('cerrar')" 
-          class="text-gray-400 hover:text-white text-xl"
-        >
-          &times;
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden">
+      <!-- Encabezado -->
+      <div class="flex justify-between items-center px-6 py-4 bg-[#1F1824]">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-lg bg-[#9E5A78] flex items-center justify-center text-white text-sm">
+            <i class="bi bi-person-vcard"></i>
+          </div>
+          <h3 class="text-sm font-bold text-[#FAF8F6]">
+            {{ cliente ? 'Editar Cliente' : 'Nuevo Cliente' }}
+          </h3>
+        </div>
+        <button @click="emit('cerrar')" class="text-gray-400 hover:text-white transition">
+          <i class="bi bi-x-lg"></i>
         </button>
       </div>
 
-      <div class="p-6">
-        <FormKit
-          type="form"
-          v-model="formData"
-          :actions="false"
-          @submit="handleSubmit"
-        >
-          <div class="grid grid-cols-2 gap-4">
-            <FormKit
+      <!-- Formulario -->
+      <form @submit.prevent="handleSubmit" class="p-6 space-y-4">
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">Nombre *</label>
+            <input
+              v-model="form.nombre"
               type="text"
-              name="nombre"
-              label="Nombre"
               placeholder="Ej. Juan"
-              validation="required|length:2"
+              required
+              class="w-full px-3.5 py-2.5 text-xs bg-[#FAF8F6] border border-[#EADBDE] rounded-xl focus:ring-2 focus:ring-[#9E5A78] focus:outline-none"
             />
-            <FormKit
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">Apellido</label>
+            <input
+              v-model="form.apellido"
               type="text"
-              name="apellido"
-              label="Apellido"
               placeholder="Ej. Pérez"
-              validation="required|length:2"
+              class="w-full px-3.5 py-2.5 text-xs bg-[#FAF8F6] border border-[#EADBDE] rounded-xl focus:ring-2 focus:ring-[#9E5A78] focus:outline-none"
             />
           </div>
+        </div>
 
-          <div class="grid grid-cols-2 gap-4">
-            <FormKit
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">Teléfono (WhatsApp) *</label>
+            <input
+              v-model="form.telefono"
               type="tel"
-              name="telefono"
-              label="Teléfono (WhatsApp)"
               placeholder="Ej. 584120000000"
-              validation="required"
+              required
+              class="w-full px-3.5 py-2.5 text-xs bg-[#FAF8F6] border border-[#EADBDE] rounded-xl focus:ring-2 focus:ring-[#9E5A78] focus:outline-none"
             />
-            <FormKit
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">Correo</label>
+            <input
+              v-model="form.correo"
               type="email"
-              name="correo"
-              label="Correo Electrónico"
               placeholder="juan@ejemplo.com"
-              validation="email"
+              class="w-full px-3.5 py-2.5 text-xs bg-[#FAF8F6] border border-[#EADBDE] rounded-xl focus:ring-2 focus:ring-[#9E5A78] focus:outline-none"
             />
           </div>
+        </div>
 
-          <FormKit
+        <div>
+          <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">Dirección</label>
+          <input
+            v-model="form.direccion"
             type="text"
-            name="direccion"
-            label="Dirección"
             placeholder="Escribe la dirección exacta"
+            class="w-full px-3.5 py-2.5 text-xs bg-[#FAF8F6] border border-[#EADBDE] rounded-xl focus:ring-2 focus:ring-[#9E5A78] focus:outline-none"
           />
+        </div>
 
-          <FormKit
+        <div>
+          <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">Cantidad de Pedidos</label>
+          <input
+            v-model.number="form.cantidadPedidos"
             type="number"
-            name="cantidadPedidos"
-            label="Cantidad de Pedidos"
+            min="0"
             placeholder="0"
-            validation="numeric|min:0"
+            class="w-full px-3.5 py-2.5 text-xs bg-[#FAF8F6] border border-[#EADBDE] rounded-xl focus:ring-2 focus:ring-[#9E5A78] focus:outline-none"
           />
+        </div>
 
-          <div class="flex justify-end gap-3 mt-6">
-            <button
-              type="button"
-              @click="emit('cerrar')"
-              class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition"
-            >
-              Cancelar
-            </button>
-            <button
-              type="submit"
-              :disabled="cargando"
-              class="px-5 py-2 bg-emerald-600 text-white font-bold rounded-lg hover:bg-emerald-700 disabled:bg-emerald-400 transition"
-            >
-              {{ cargando ? 'Guardando...' : (cliente ? 'Actualizar' : 'Registrar') }}
-            </button>
-          </div>
-        </FormKit>
-      </div>
+        <!-- Botones -->
+        <div class="flex justify-end gap-3 pt-2">
+          <button
+            type="button"
+            @click="emit('cerrar')"
+            class="px-4 py-2.5 bg-gray-100 text-gray-600 text-xs font-bold rounded-xl hover:bg-gray-200 transition"
+          >
+            Cancelar
+          </button>
+          <button
+            type="submit"
+            :disabled="cargando"
+            class="px-5 py-2.5 bg-[#9E5A78] hover:bg-[#864662] text-white text-xs font-bold rounded-xl shadow-sm transition flex items-center gap-2 disabled:opacity-50"
+          >
+            <i v-if="cargando" class="bi bi-arrow-repeat animate-spin"></i>
+            <i v-else class="bi bi-check-lg"></i>
+            <span>{{ cargando ? 'Guardando...' : (cliente ? 'Actualizar' : 'Registrar') }}</span>
+          </button>
+        </div>
+      </form>
     </div>
   </div>
 </template>

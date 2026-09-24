@@ -1,9 +1,8 @@
 import { createApp } from 'vue'
 import App from './App.vue'
-
-// formkit
-import { plugin, defaultConfig } from '@formkit/vue'
-import config from '../formkit.config' // Asegúrate de ajustar la ruta según tu estructura
+import router from './router'
+import { createPinia } from 'pinia'
+import piniaPluginPersistedstate from 'pinia-plugin-persistedstate'
 
 // styles
 import './assets/main.css'
@@ -12,15 +11,20 @@ import './assets/main.css'
 import { VueFire, VueFireAuth } from 'vuefire'
 import { firebaseApp } from './config/firestore.js'
 
-
 const app = createApp(App)
-app.use(plugin, defaultConfig(config))
 
+// Pinia setup
+const pinia = createPinia()
+pinia.use(piniaPluginPersistedstate)
+app.use(pinia)
+
+// Router setup
+app.use(router)
+
+// VueFire setup
 app.use(VueFire, {
-  // Pasa la instancia inicializada de Firebase
   firebaseApp,
   modules: [
-    // Habilita el módulo de autenticación de VueFire
     VueFireAuth(),
   ],
 })

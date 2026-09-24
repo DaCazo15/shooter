@@ -1,224 +1,138 @@
 <script setup>
-import { onMounted } from 'vue'
-import { useCMD } from '../../../composable/useCMD'
+import { onMounted, ref } from 'vue'
+import { useCmdStore } from '../../../stores/cmdStore'
+import { useAuthStore } from '../../../stores/authStore'
+import CmdWebSections from './CmdWebSections.vue'
+import CmdFooterSettings from './CmdFooterSettings.vue'
+import CmdLinktreeSettings from './CmdLinktreeSettings.vue'
 
-const {
-  config,
-  modoActual,
-  MODOS_CMD,
-  urlSubdominio,
-  cargando,
-  guardando,
-  cambiarModo,
-  toggleBloqueWeb,
-  moverBloqueWeb,
-  agregarEnlaceLinktree,
-  eliminarEnlaceLinktree,
-  cargarConfiguracion,
-  guardarCMD
-} = useCMD('USUARIO_ACTUAL_ID')
+const cmdStore = useCmdStore()
+const authStore = useAuthStore()
+
+const pestanaActiva = ref('editor') // 'editor' | 'footer' | 'linktree'
+const guardadoExitoso = ref(false)
 
 onMounted(() => {
-  cargarConfiguracion()
+  cmdStore.cargarDeFirestore(authStore.user.uid)
 })
 
-const handleSubmit = () => {
-  guardarCMD()
+const handleGuardar = async () => {
+  const ok = await cmdStore.guardarEnFirestore(authStore.user.uid)
+  if (ok) {
+    guardadoExitoso.value = true
+    setTimeout(() => {
+      guardadoExitoso.value = false
+    }, 3500)
+  }
 }
 </script>
 
 <template>
-  <div class="max-w-5xl mx-auto p-6 bg-white rounded-xl shadow-md">
+  <div class="space-y-6">
     <!-- Header -->
-    <div class="border-b pb-4 mb-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-6 rounded-2xl border border-[#EADBDE] shadow-xs">
       <div>
-        <h2 class="text-2xl font-black text-gray-800">CMD — Builder Center</h2>
-        <p class="text-sm text-gray-500">Configura tu aplicación Web MVP o tu perfil Linktree</p>
+        <div class="flex items-center gap-2">
+          <span class="px-2.5 py-0.5 rounded-md bg-[#F7EFE9] text-[#9E5A78] text-[11px] font-bold uppercase tracking-wider">
+            CMD Builder & CMS
+          </span>
+          <span class="text-xs text-gray-400">|</span>
+          <span class="text-xs text-emerald-700 font-semibold flex items-center gap-1">
+            <i class="bi bi-broadcast"></i> En vivo
+          </span>
+        </div>
+        <h1 class="text-2xl font-bold font-serif-title text-[#1F1824] mt-1">Constructor de Sitio Web & Linktree</h1>
+        <p class="text-xs text-gray-500">Personaliza los textos, imágenes, enlaces y secciones de tu vitrina pública y de tu perfil Linktree</p>
       </div>
-      <div v-if="urlSubdominio" class="bg-emerald-50 text-emerald-700 px-3 py-1.5 rounded-lg border border-emerald-200 text-sm font-semibold flex items-center gap-2">
-        <i class="bi bi-globe"></i>
-        <a :href="urlSubdominio" target="_blank" class="hover:underline">{{ urlSubdominio }}</a>
+
+      <div class="flex items-center gap-3">
+        <router-link
+          :to="{ name: 'public-web', params: { subdominio: cmdStore.subdominio || 'pandibuy' } }"
+          target="_blank"
+          class="px-4 py-2 bg-[#F7EFE9] hover:bg-[#EADBDE] text-[#9E5A78] font-bold text-xs rounded-xl transition flex items-center gap-1.5"
+        >
+          <i class="bi bi-box-arrow-up-right"></i> Ver Web en Vivo
+        </router-link>
+
+        <button
+          @click="handleGuardar"
+          :disabled="cmdStore.guardando"
+          class="px-6 py-2 bg-[#9E5A78] hover:bg-[#864662] text-white font-bold text-xs rounded-xl shadow-md transition flex items-center gap-2"
+        >
+          <i v-if="cmdStore.guardando" class="bi bi-arrow-repeat animate-spin"></i>
+          <i v-else class="bi bi-cloud-arrow-up-fill"></i>
+          <span>{{ cmdStore.guardando ? 'Guardando...' : 'Publicar Cambios' }}</span>
+        </button>
       </div>
     </div>
 
-    <!-- Selector de Modo (Pestañas) -->
-    <div class="flex gap-2 mb-6 border-b border-gray-200 pb-2">
+    <div v-if="guardadoExitoso" class="p-4 bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-xl text-xs font-bold flex items-center gap-2">
+      <i class="bi bi-check-circle-fill text-emerald-600"></i>
+      ¡Configuración publicada y sincronizada con éxito! Los cambios ya son visibles en tu enlace público.
+    </div>
+
+    <!-- Pestañas de Modo -->
+    <div class="flex flex-wrap gap-2 border-b border-[#EADBDE] pb-2">
       <button
-        type="button"
-        class="px-5 py-2.5 rounded-lg font-bold text-sm transition flex items-center gap-2"
-        :class="modoActual === MODOS_CMD.WEB ? 'bg-slate-800 text-white shadow' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'"
-        @click="cambiarModo(MODOS_CMD.WEB)"
+        @click="pestanaActiva = 'editor'"
+        class="px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2"
+        :class="pestanaActiva === 'editor' ? 'bg-[#1F1824] text-white shadow-sm' : 'bg-white text-gray-600 hover:bg-[#F7EFE9]'"
       >
-        <i class="bi bi-window-stack"></i> CMD Web App (MVP)
+        <i class="bi bi-layout-text-window-reverse"></i> Secciones de la Web
       </button>
+
       <button
-        type="button"
-        class="px-5 py-2.5 rounded-lg font-bold text-sm transition flex items-center gap-2"
-        :class="modoActual === MODOS_CMD.LINKTREE ? 'bg-slate-800 text-white shadow' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'"
-        @click="cambiarModo(MODOS_CMD.LINKTREE)"
+        @click="pestanaActiva = 'footer'"
+        class="px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2"
+        :class="pestanaActiva === 'footer' ? 'bg-[#1F1824] text-white shadow-sm' : 'bg-white text-gray-600 hover:bg-[#F7EFE9]'"
       >
-        <i class="bi bi-diagram-2"></i> CMD Linktree
+        <i class="bi bi-symmetry-horizontal"></i> Footer de la Web
+      </button>
+
+      <button
+        @click="pestanaActiva = 'linktree'"
+        class="px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2"
+        :class="pestanaActiva === 'linktree' ? 'bg-[#1F1824] text-white shadow-sm' : 'bg-white text-gray-600 hover:bg-[#F7EFE9]'"
+      >
+        <i class="bi bi-diagram-2"></i> Perfil Linktree
       </button>
     </div>
 
-    <div v-if="cargando" class="text-center py-10 text-gray-400">
-      Cargando configuración...
+    <!-- Ajustes Globales de Subdominio y Tienda -->
+    <div class="bg-white p-5 rounded-2xl border border-[#EADBDE] shadow-xs grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div>
+        <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">Nombre / Título de la Tienda</label>
+        <input
+          v-model="cmdStore.tituloSitio"
+          type="text"
+          placeholder="Ej: Pandibuy Atelier"
+          class="w-full px-3.5 py-2 text-xs bg-[#FAF8F6] border border-[#EADBDE] rounded-xl focus:ring-2 focus:ring-[#9E5A78] focus:outline-none font-semibold"
+        />
+      </div>
+
+      <div>
+        <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">Subdominio / Slug de la Tienda</label>
+        <div class="flex items-center">
+          <span class="px-3 py-2 bg-gray-100 border border-r-0 border-[#EADBDE] text-gray-500 text-xs rounded-l-xl">
+            pandibuy.com/web/
+          </span>
+          <input
+            v-model="cmdStore.subdominio"
+            type="text"
+            placeholder="mitienda"
+            class="w-full px-3 py-2 text-xs bg-[#FAF8F6] border border-[#EADBDE] rounded-r-xl focus:ring-2 focus:ring-[#9E5A78] focus:outline-none font-bold text-[#9E5A78]"
+          />
+        </div>
+      </div>
     </div>
 
-    <FormKit
-      v-else
-      type="form"
-      :actions="false"
-      @submit="handleSubmit"
-    >
-      <!-- Subdominio Global -->
-      <div class="bg-slate-900 text-white rounded-xl p-5 mb-6">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-gray-800">
-          <FormKit
-            type="text"
-            v-model="config.subdominio"
-            label="Subdominio del proyecto"
-            placeholder="mimienda"
-            help="Se usará para acceder a tu sitio o linktree"
-            validation="required|alpha_node"
-          />
-          <FormKit
-            type="text"
-            v-model="config.tituloSitio"
-            label="Nombre del Negocio"
-            placeholder="Mi Tienda Oficial"
-            validation="required"
-          />
-        </div>
-      </div>
+    <!-- 1. PESTAÑA: SECCIONES DE LA WEB -->
+    <CmdWebSections v-if="pestanaActiva === 'editor'" />
 
-      <!-- MODO 1: CMD WEB APP -->
-      <div v-if="modoActual === MODOS_CMD.WEB" class="space-y-6">
-        <div class="border-l-4 border-blue-600 pl-4 py-1">
-          <h3 class="text-xl font-bold text-gray-800">Constructor de Web App / Catálogo</h3>
-          <p class="text-sm text-gray-500">Activa y ordena las secciones de tu sitio web</p>
-        </div>
+    <!-- 2. PESTAÑA: FOOTER DE LA WEB -->
+    <CmdFooterSettings v-if="pestanaActiva === 'footer'" />
 
-        <div class="space-y-3">
-          <div
-            v-for="(bloque, index) in config.bloquesWeb"
-            :key="bloque.id"
-            class="flex items-center justify-between bg-gray-50 border border-gray-200 rounded-xl p-4 shadow-sm"
-          >
-            <div class="flex items-center gap-3">
-              <input
-                type="checkbox"
-                :checked="bloque.activo"
-                @change="toggleBloqueWeb(bloque.id)"
-                class="w-5 h-5 accent-emerald-600 cursor-pointer"
-              />
-              <span class="font-semibold text-gray-800" :class="{ 'line-through text-gray-400': !bloque.activo }">
-                {{ bloque.tipo }}
-              </span>
-            </div>
-
-            <div class="flex items-center gap-2">
-              <button
-                type="button"
-                :disabled="index === 0"
-                class="p-1.5 text-gray-500 hover:text-blue-600 disabled:opacity-30"
-                @click="moverBloqueWeb(index, -1)"
-              >
-                <i class="bi bi-arrow-up-circle text-lg"></i>
-              </button>
-              <button
-                type="button"
-                :disabled="index === config.bloquesWeb.length - 1"
-                class="p-1.5 text-gray-500 hover:text-blue-600 disabled:opacity-30"
-                @click="moverBloqueWeb(index, 1)"
-              >
-                <i class="bi bi-arrow-down-circle text-lg"></i>
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- MODO 2: CMD LINKTREE -->
-      <div v-if="modoActual === MODOS_CMD.LINKTREE" class="space-y-6">
-        <div class="border-l-4 border-emerald-600 pl-4 py-1">
-          <h3 class="text-xl font-bold text-gray-800">Perfil Linktree</h3>
-          <p class="text-sm text-gray-500">Administra tus enlaces directos a redes y canales de contacto</p>
-        </div>
-
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 bg-gray-50 p-4 rounded-xl border border-gray-200">
-          <FormKit
-            type="text"
-            v-model="config.linktree.tituloPerfil"
-            label="Título / Nombre en Perfil"
-            placeholder="Ej. @mitienda_oficial"
-          />
-          <FormKit
-            type="text"
-            v-model="config.linktree.biografia"
-            label="Biografía / Eslogan"
-            placeholder="Atención rápida por WhatsApp e Instagram"
-          />
-        </div>
-
-        <!-- Lista de Enlaces -->
-        <div class="space-y-3">
-          <div
-            v-for="(enlace, idx) in config.linktree.enlaces"
-            :key="enlace.id"
-            class="grid grid-cols-12 gap-3 items-center bg-white border border-gray-200 p-3 rounded-xl shadow-sm"
-          >
-            <div class="col-span-1 text-center">
-              <input
-                type="checkbox"
-                v-model="enlace.activo"
-                class="w-4 h-4 accent-emerald-600"
-              />
-            </div>
-            <div class="col-span-4">
-              <FormKit
-                type="text"
-                v-model="enlace.etiqueta"
-                placeholder="Nombre del enlace"
-              />
-            </div>
-            <div class="col-span-6">
-              <FormKit
-                type="text"
-                v-model="enlace.url"
-                placeholder="https://wa.me/... o enlace"
-              />
-            </div>
-            <div class="col-span-1 text-center">
-              <button
-                type="button"
-                class="text-red-500 hover:text-red-700"
-                @click="eliminarEnlaceLinktree(idx)"
-              >
-                <i class="bi bi-trash"></i>
-              </button>
-            </div>
-          </div>
-
-          <button
-            type="button"
-            class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg font-medium text-sm transition flex items-center gap-1"
-            @click="agregarEnlaceLinktree"
-          >
-            <i class="bi bi-plus-circle"></i> Agregar otro enlace
-          </button>
-        </div>
-      </div>
-
-      <!-- Guardado Unificado -->
-      <button
-        type="submit"
-        :disabled="guardando"
-        class="w-full mt-8 bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-400 text-white font-bold py-3 px-6 rounded-lg transition shadow-md flex items-center justify-center gap-2"
-      >
-        <i class="bi bi-cloud-upload"></i>
-        {{ guardando ? 'Guardando...' : 'Publicar Configuración' }}
-      </button>
-    </FormKit>
+    <!-- 3. PESTAÑA: LINKTREE -->
+    <CmdLinktreeSettings v-if="pestanaActiva === 'linktree'" />
   </div>
 </template>
