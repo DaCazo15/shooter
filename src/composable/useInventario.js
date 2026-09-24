@@ -1,5 +1,5 @@
 import { ref } from 'vue'
-import { db } from '../config/firestore.js'
+import { db, auth } from '../config/firestore.js'
 import {
   collection,
   addDoc,
@@ -9,30 +9,57 @@ import {
   onSnapshot,
   serverTimestamp
 } from 'firebase/firestore'
+import { useAuthStore } from '../stores/authStore'
 
 /**
  * Composable para la gestión de inventario de materiales/insumos.
- * Registra stock, costos y unidades de cada material del negocio.
+ * Aislado por subcolección: negocios/{uid}/inventario
  */
-export function useInventario() {
+export function useInventario(initialUid = null) {
   const materiales = ref([])
   const cargando = ref(false)
   const modalAbierto = ref(false)
   const materialEditar = ref(null)
+  let listenerUnsubscribe = null
 
-  const obtenerMateriales = () => {
+  // Resolver UID efectivo del negocio
+  const getUid = (customUid = null) => {
+    if (customUid) return customUid
+    if (initialUid) return initialUid
+    const authStore = useAuthStore()
+    return authStore.user?.uid || auth?.currentUser?.uid || 'demo-user-1'
+  }
+
+  const obtenerMateriales = (customUid = null) => {
+    if (listenerUnsubscribe) {
+      listenerUnsubscribe()
+      listenerUnsubscribe = null
+    }
+
     cargando.value = true
-    const refCol = collection(db, 'inventario')
-    return onSnapshot(refCol, (snapshot) => {
-      materiales.value = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }))
+    const uid = getUid(customUid)
+
+    try {
+      if (db) {
+        const subcolRef = collection(db, 'negocios', uid, 'inventario')
+        listenerUnsubscribe = onSnapshot(subcolRef, (snapshot) => {
+          materiales.value = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+          }))
+          cargando.value = false
+        }, (error) => {
+          console.warn(`Error al obtener inventario en negocios/${uid}/inventario:`, error)
+          cargando.value = false
+        })
+        return listenerUnsubscribe
+      } else {
+        cargando.value = false
+      }
+    } catch (err) {
+      console.warn('Error inicializando listener de inventario:', err)
       cargando.value = false
-    }, (error) => {
-      console.error('Error al obtener inventario:', error)
-      cargando.value = false
-    })
+    }
   }
 
   const abrirModalCrear = () => {
@@ -50,53 +77,76 @@ export function useInventario() {
     materialEditar.value = null
   }
 
-  const guardarMaterial = async (datos) => {
+  const guardarMaterial = async (datos, customUid = null) => {
     cargando.value = true
+    const uid = getUid(customUid)
+
+    const payload = {
+      nombre: datos.nombre,
+      categoria: datos.categoria,
+      cantidad: Number(datos.cantidad) || 0,
+      unidad: datos.unidad,
+      costoUnitario: Number(datos.costoUnitario) || 0,
+      stockMinimo: Number(datos.stockMinimo) || 0,
+      proveedor: datos.proveedor || '',
+      notas: datos.notas || ''
+    }
+
     try {
-      if (materialEditar.value?.id) {
-        const docRef = doc(db, 'inventario', materialEditar.value.id)
-        await updateDoc(docRef, {
-          nombre: datos.nombre,
-          categoria: datos.categoria,
-          cantidad: Number(datos.cantidad) || 0,
-          unidad: datos.unidad,
-          costoUnitario: Number(datos.costoUnitario) || 0,
-          stockMinimo: Number(datos.stockMinimo) || 0,
-          proveedor: datos.proveedor || '',
-          notas: datos.notas || '',
-          actualizadoEn: serverTimestamp()
-        })
+      if (db) {
+        if (materialEditar.value?.id && !materialEditar.value.id.startsWith('local_')) {
+          const docRef = doc(db, 'negocios', uid, 'inventario', materialEditar.value.id)
+          await updateDoc(docRef, {
+            ...payload,
+            actualizadoEn: serverTimestamp ? serverTimestamp() : new Date().toISOString()
+          })
+        } else {
+          const subcolRef = collection(db, 'negocios', uid, 'inventario')
+          await addDoc(subcolRef, {
+            ...payload,
+            creadoEn: serverTimestamp ? serverTimestamp() : new Date().toISOString()
+          })
+        }
       } else {
-        await addDoc(collection(db, 'inventario'), {
-          nombre: datos.nombre,
-          categoria: datos.categoria,
-          cantidad: Number(datos.cantidad) || 0,
-          unidad: datos.unidad,
-          costoUnitario: Number(datos.costoUnitario) || 0,
-          stockMinimo: Number(datos.stockMinimo) || 0,
-          proveedor: datos.proveedor || '',
-          notas: datos.notas || '',
-          creadoEn: serverTimestamp()
-        })
+        // Modo demo local
+        if (materialEditar.value?.id) {
+          const idx = materiales.value.findIndex(m => m.id === materialEditar.value.id)
+          if (idx !== -1) materiales.value[idx] = { ...materialEditar.value, ...payload }
+        } else {
+          materiales.value.unshift({ id: `local_${Date.now()}`, ...payload })
+        }
       }
       cerrarModal()
     } catch (error) {
-      console.error('Error al guardar material:', error)
-      alert('Ocurrió un error al guardar el material.')
+      console.warn('Error al guardar material en Firestore, guardando en modo local:', error)
+      if (materialEditar.value?.id) {
+        const idx = materiales.value.findIndex(m => m.id === materialEditar.value.id)
+        if (idx !== -1) materiales.value[idx] = { ...materialEditar.value, ...payload }
+      } else {
+        materiales.value.unshift({ id: `local_${Date.now()}`, ...payload })
+      }
+      cerrarModal()
     } finally {
       cargando.value = false
     }
   }
 
-  const eliminarMaterial = async (id) => {
+  const eliminarMaterial = async (id, customUid = null) => {
     if (!confirm('¿Estás seguro de eliminar este material del inventario?')) return
 
     cargando.value = true
+    const uid = getUid(customUid)
+
     try {
-      await deleteDoc(doc(db, 'inventario', id))
+      if (db && !id.startsWith('local_')) {
+        const docRef = doc(db, 'negocios', uid, 'inventario', id)
+        await deleteDoc(docRef)
+      } else {
+        materiales.value = materiales.value.filter(m => m.id !== id)
+      }
     } catch (error) {
-      console.error('Error al eliminar material:', error)
-      alert('Error al intentar eliminar.')
+      console.warn('Error al eliminar material de Firestore:', error)
+      materiales.value = materiales.value.filter(m => m.id !== id)
     } finally {
       cargando.value = false
     }

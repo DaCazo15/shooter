@@ -1,0 +1,98 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ==========================================
+    // FUNCIONES AUXILIARES DE SEGURIDAD
+    // ==========================================
+    
+    // Verifica si el usuario ha iniciado sesión
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Verifica si el usuario autenticado es el propietario del negocio
+    function isOwner(uid) {
+      return isAuthenticated() && request.auth.uid == uid;
+    }
+
+    // ==========================================
+    // REGLAS PARA SUBCOLECCIONES DE NEGOCIOS
+    // ==========================================
+    match /negocios/{uid} {
+      // Documento principal del negocio (solo dueño)
+      allow read, write: if isOwner(uid);
+
+      // 1. Catálogo de productos:
+      // Lectura pública para que clientes vean la tienda online sin login.
+      // Escritura restringida estrictamente al dueño del negocio.
+      match /catalogo/{productoId} {
+        allow read: if true;
+        allow write: if isOwner(uid);
+      }
+
+      // 2. Configuración del sitio web / Linktree público:
+      // Lectura pública para renderizar banners, títulos, enlaces y secciones.
+      // Escritura restringida al dueño del negocio.
+      match /sitios_web/{sitioId} {
+        allow read: if true;
+        allow write: if isOwner(uid);
+      }
+
+      match /sitios_cmd/{cmdId} {
+        allow read: if true;
+        allow write: if isOwner(uid);
+      }
+
+      // 3. Inventario & Insumos:
+      // Información sensible de stock, costos y márgenes. Solo el dueño.
+      match /inventario/{materialId} {
+        allow read, write: if isOwner(uid);
+      }
+
+      // 4. Clientes:
+      // Datos personales, teléfonos y direcciones. Solo el dueño.
+      match /clientes/{clienteId} {
+        allow read, write: if isOwner(uid);
+      }
+
+      // 5. Proveedores:
+      // Contactos de proveedores y precios mayoristas. Solo el dueño.
+      match /proveedores/{proveedorId} {
+        allow read, write: if isOwner(uid);
+      }
+
+      // Cualquier otra subcolección dentro de negocios/{uid} es privada por defecto
+      match /{allSubcollections=**} {
+        allow read, write: if isOwner(uid);
+      }
+    }
+
+    // ==========================================
+    // COLECCIONES GLOBALES / COMPATIBILIDAD
+    // ==========================================
+
+    // Configuración CMD pública por UID o subdominio
+    match /sitios_cmd/{docId} {
+      allow read: if true;
+      allow write: if isOwner(docId);
+    }
+
+    // Cuentas financieras (balance y cuentas bancarias del usuario)
+    match /cuentas/{cuentaId} {
+      allow read, write: if isAuthenticated() && 
+        (resource == null || resource.data.uid == request.auth.uid);
+      allow create: if isAuthenticated() && request.resource.data.uid == request.auth.uid;
+    }
+
+    // Perfiles de usuario
+    match /usuarios/{uid} {
+      allow read, write: if isOwner(uid);
+    }
+
+    // Bloqueo por defecto para cualquier otra colección no declarada
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

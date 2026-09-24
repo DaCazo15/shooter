@@ -1,5 +1,5 @@
 import { ref } from 'vue'
-import { db } from '../config/firestore.js'
+import { db, auth } from '../config/firestore.js'
 import { 
   collection, 
   addDoc, 
@@ -9,27 +9,54 @@ import {
   onSnapshot, 
   serverTimestamp 
 } from 'firebase/firestore'
+import { useAuthStore } from '../stores/authStore'
 
-export function useProveedores() {
+export function useProveedores(initialUid = null) {
   const proveedores = ref([])
   const cargando = ref(false)
   const modalAbierto = ref(false)
   const proveedorEditar = ref(null)
+  let listenerUnsubscribe = null
+
+  // Resolver UID efectivo del negocio
+  const getUid = (customUid = null) => {
+    if (customUid) return customUid
+    if (initialUid) return initialUid
+    const authStore = useAuthStore()
+    return authStore.user?.uid || auth?.currentUser?.uid || 'demo-user-1'
+  }
 
   // Escuchar cambios en tiempo real
-  const obtenerProveedores = () => {
+  const obtenerProveedores = (customUid = null) => {
+    if (listenerUnsubscribe) {
+      listenerUnsubscribe()
+      listenerUnsubscribe = null
+    }
+
     cargando.value = true
-    const refCol = collection(db, 'proveedores')
-    return onSnapshot(refCol, (snapshot) => {
-      proveedores.value = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }))
+    const uid = getUid(customUid)
+
+    try {
+      if (db) {
+        const subcolRef = collection(db, 'negocios', uid, 'proveedores')
+        listenerUnsubscribe = onSnapshot(subcolRef, (snapshot) => {
+          proveedores.value = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+          }))
+          cargando.value = false
+        }, (error) => {
+          console.warn(`Error al obtener proveedores en negocios/${uid}/proveedores:`, error)
+          cargando.value = false
+        })
+        return listenerUnsubscribe
+      } else {
+        cargando.value = false
+      }
+    } catch (err) {
+      console.warn('Error inicializando listener de proveedores:', err)
       cargando.value = false
-    }, (error) => {
-      console.error('Error al obtener proveedores:', error)
-      cargando.value = false
-    })
+    }
   }
 
   const abrirModalCrear = () => {
@@ -48,50 +75,76 @@ export function useProveedores() {
   }
 
   // Guardar (Crear o Actualizar)
-  const guardarProveedor = async (datos) => {
+  const guardarProveedor = async (datos, customUid = null) => {
     cargando.value = true
+    const uid = getUid(customUid)
+
+    const payload = {
+      nombre: datos.nombre,
+      apellido: datos.apellido || '',
+      telefono: datos.telefono,
+      correo: datos.correo || '',
+      mercancia: datos.mercancia || ''
+    }
+
     try {
-      if (proveedorEditar.value?.id) {
-        // Actualizar
-        const docRef = doc(db, 'proveedores', proveedorEditar.value.id)
-        await updateDoc(docRef, {
-          nombre: datos.nombre,
-          apellido: datos.apellido,
-          telefono: datos.telefono,
-          correo: datos.correo,
-          mercancia: datos.mercancia,
-          actualizadoEn: serverTimestamp()
-        })
+      if (db) {
+        if (proveedorEditar.value?.id && !proveedorEditar.value.id.startsWith('local_')) {
+          // Actualizar
+          const docRef = doc(db, 'negocios', uid, 'proveedores', proveedorEditar.value.id)
+          await updateDoc(docRef, {
+            ...payload,
+            actualizadoEn: serverTimestamp ? serverTimestamp() : new Date().toISOString()
+          })
+        } else {
+          // Crear
+          const subcolRef = collection(db, 'negocios', uid, 'proveedores')
+          await addDoc(subcolRef, {
+            ...payload,
+            creadoEn: serverTimestamp ? serverTimestamp() : new Date().toISOString()
+          })
+        }
       } else {
-        // Crear
-        await addDoc(collection(db, 'proveedores'), {
-          nombre: datos.nombre,
-          apellido: datos.apellido,
-          telefono: datos.telefono,
-          correo: datos.correo,
-          mercancia: datos.mercancia,
-          creadoEn: serverTimestamp()
-        })
+        // Demo local
+        if (proveedorEditar.value?.id) {
+          const idx = proveedores.value.findIndex(p => p.id === proveedorEditar.value.id)
+          if (idx !== -1) proveedores.value[idx] = { ...proveedorEditar.value, ...payload }
+        } else {
+          proveedores.value.unshift({ id: `local_${Date.now()}`, ...payload })
+        }
       }
       cerrarModal()
     } catch (error) {
-      console.error('Error al guardar proveedor:', error)
-      alert('Ocurrió un error al intentar guardar.')
+      console.warn('Error al guardar proveedor en Firestore, guardando local:', error)
+      if (proveedorEditar.value?.id) {
+        const idx = proveedores.value.findIndex(p => p.id === proveedorEditar.value.id)
+        if (idx !== -1) proveedores.value[idx] = { ...proveedorEditar.value, ...payload }
+      } else {
+        proveedores.value.unshift({ id: `local_${Date.now()}`, ...payload })
+      }
+      cerrarModal()
     } finally {
       cargando.value = false
     }
   }
 
   // Eliminar
-  const eliminarProveedor = async (id) => {
+  const eliminarProveedor = async (id, customUid = null) => {
     if (!confirm('¿Estás seguro de eliminar este proveedor?')) return
 
     cargando.value = true
+    const uid = getUid(customUid)
+
     try {
-      await deleteDoc(doc(db, 'proveedores', id))
+      if (db && !id.startsWith('local_')) {
+        const docRef = doc(db, 'negocios', uid, 'proveedores', id)
+        await deleteDoc(docRef)
+      } else {
+        proveedores.value = proveedores.value.filter(p => p.id !== id)
+      }
     } catch (error) {
-      console.error('Error al eliminar proveedor:', error)
-      alert('Error al intentar eliminar.')
+      console.warn('Error al eliminar proveedor de Firestore:', error)
+      proveedores.value = proveedores.value.filter(p => p.id !== id)
     } finally {
       cargando.value = false
     }
@@ -99,8 +152,8 @@ export function useProveedores() {
 
   // Utilidad para enlace directo a WhatsApp
   const generarLinkWhatsApp = (telefono, nombre) => {
-    const numeroLimpio = telefono.replace(/\D/g, '')
-    const mensaje = encodeURIComponent(`Hola ${nombre}, me contacto desde el sistema.`)
+    const numeroLimpio = (telefono || '').replace(/\D/g, '')
+    const mensaje = encodeURIComponent(`Hola ${nombre || ''}, me contacto desde el sistema.`)
     return `https://wa.me/${numeroLimpio}?text=${mensaje}`
   }
 

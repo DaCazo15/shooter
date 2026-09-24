@@ -1,17 +1,21 @@
 <script setup>
-import { ref, computed, onMounted, nextTick } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { useCatalogo } from '../../composable/useCatalogo'
 import { useWhatsApp } from '../../composable/useWhatsApp'
 import gsap from 'gsap'
 
-defineProps({
+const props = defineProps({
   bloque: {
     type: Object,
     default: null
+  },
+  uid: {
+    type: String,
+    default: ''
   }
 })
 
-const { catalogo, iniciarEscuchaCatalogo, detenerEscucha } = useCatalogo()
+const { catalogo, iniciarEscuchaCatalogo, detenerEscucha } = useCatalogo(props.uid)
 const { contactarWhatsApp } = useWhatsApp()
 
 const busqueda = ref('')
@@ -32,8 +36,15 @@ const categorias = computed(() => {
   return ['Todos', ...Array.from(set)]
 })
 
+// Escuchar cambios en el prop uid para recargar catálogo si cambia la tienda
+watch(() => props.uid, (nuevoUid) => {
+  if (nuevoUid) {
+    iniciarEscuchaCatalogo(nuevoUid)
+  }
+})
+
 onMounted(() => {
-  iniciarEscuchaCatalogo()
+  iniciarEscuchaCatalogo(props.uid)
   nextTick(() => {
     gsap.from('.gsap-card', {
       duration: 0.7,
@@ -44,6 +55,10 @@ onMounted(() => {
       ease: 'power2.out'
     })
   })
+})
+
+onUnmounted(() => {
+  detenerEscucha()
 })
 
 defineExpose({ detenerEscucha })

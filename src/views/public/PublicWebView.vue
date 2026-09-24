@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useCmdStore } from '../../stores/cmdStore'
 import { getHostnameSubdomain } from '../../utils/subdomain'
@@ -16,13 +16,25 @@ import PublicWhatsAppFloat from '../../components/public/PublicWhatsAppFloat.vue
 const route = useRoute()
 const cmdStore = useCmdStore()
 
+// UID del negocio dueño de la tienda
+const ownerUid = computed(() => {
+  return cmdStore.ownerUid || route.params.subdominio || getHostnameSubdomain() || 'demo-user-1'
+})
+
 // Carga de configuración por subdominio o parámetro de ruta
-onMounted(() => {
+const cargarTienda = () => {
   const sub = route.params.subdominio || getHostnameSubdomain()
-  if (sub && sub !== cmdStore.subdominio) {
-    // Si viene un subdominio específico se intenta sincronizar
+  if (sub) {
     cmdStore.cargarDeFirestore(sub)
   }
+}
+
+onMounted(() => {
+  cargarTienda()
+})
+
+watch(() => route.params.subdominio, () => {
+  cargarTienda()
 })
 
 // Estado del modal legal (coordinado por el orquestador)
@@ -46,7 +58,7 @@ const bloqueCta = computed(() => cmdStore.bloquesWeb.find(b => b.id === 'cta'))
     <PublicInfoBar :bloque="bloqueCinta" />
     <PublicNavbar />
     <PublicHeroBanner :bloque="bloqueHero" />
-    <PublicCatalogo :bloque="bloqueCatalogo" />
+    <PublicCatalogo :bloque="bloqueCatalogo" :uid="ownerUid" />
     <PublicCtaBanner :bloque="bloqueCta" />
     <PublicFooter @abrir-legal="abrirModalLegal" />
     <PublicWhatsAppFloat />

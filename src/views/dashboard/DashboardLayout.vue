@@ -2,6 +2,7 @@
 import AdminNav from '../../components/layout/AdminNav.vue'
 import AdminTabs from '../../components/layout/AdminTabs.vue'
 import AdminFooter from '../../components/layout/AdminFooter.vue'
+import CopilotoComponent from '../../components/copiloto/CopilotoComponent.vue'
 </script>
 
 <template>
@@ -18,6 +19,9 @@ import AdminFooter from '../../components/layout/AdminFooter.vue'
     </main>
 
     <AdminFooter />
+
+    <!-- Copiloto IA Global para todo el Dashboard -->
+    <CopilotoComponent />
   </div>
 </template>
 
