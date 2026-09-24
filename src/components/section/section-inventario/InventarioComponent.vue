@@ -29,7 +29,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="max-w-5xl mx-auto p-6 bg-white rounded-lg shadow-md">
+  <div class="max-w-6xl mx-auto p-6 bg-white rounded-lg shadow-md">
     <!-- Header de la sección -->
     <div class="flex justify-between items-center mb-6">
       <div>
