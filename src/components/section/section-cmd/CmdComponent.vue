@@ -2,16 +2,20 @@
 import { onMounted } from 'vue'
 import { useCMD } from '../../../composable/useCMD'
 
-// Pasar el ID del usuario autenticado (se asume auth.currentUser.uid o un ID estático temporal)
 const {
-  configSitio,
+  config,
+  modoActual,
+  MODOS_CMD,
   urlSubdominio,
   cargando,
   guardando,
+  cambiarModo,
+  toggleBloqueWeb,
+  moverBloqueWeb,
+  agregarEnlaceLinktree,
+  eliminarEnlaceLinktree,
   cargarConfiguracion,
-  toggleBloque,
-  moverBloque,
-  guardarSitio
+  guardarCMD
 } = useCMD('USUARIO_ACTUAL_ID')
 
 onMounted(() => {
@@ -19,7 +23,7 @@ onMounted(() => {
 })
 
 const handleSubmit = () => {
-  guardarSitio()
+  guardarCMD()
 }
 </script>
 
@@ -28,13 +32,33 @@ const handleSubmit = () => {
     <!-- Header -->
     <div class="border-b pb-4 mb-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
       <div>
-        <h2 class="text-2xl font-black text-gray-800">CMD — Page Builder & MVP</h2>
-        <p class="text-sm text-gray-500">Arma tu sitio web dinámico, catálogo y Linktree personalizado</p>
+        <h2 class="text-2xl font-black text-gray-800">CMD — Builder Center</h2>
+        <p class="text-sm text-gray-500">Configura tu aplicación Web MVP o tu perfil Linktree</p>
       </div>
       <div v-if="urlSubdominio" class="bg-emerald-50 text-emerald-700 px-3 py-1.5 rounded-lg border border-emerald-200 text-sm font-semibold flex items-center gap-2">
         <i class="bi bi-globe"></i>
         <a :href="urlSubdominio" target="_blank" class="hover:underline">{{ urlSubdominio }}</a>
       </div>
+    </div>
+
+    <!-- Selector de Modo (Pestañas) -->
+    <div class="flex gap-2 mb-6 border-b border-gray-200 pb-2">
+      <button
+        type="button"
+        class="px-5 py-2.5 rounded-lg font-bold text-sm transition flex items-center gap-2"
+        :class="modoActual === MODOS_CMD.WEB ? 'bg-slate-800 text-white shadow' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'"
+        @click="cambiarModo(MODOS_CMD.WEB)"
+      >
+        <i class="bi bi-window-stack"></i> CMD Web App (MVP)
+      </button>
+      <button
+        type="button"
+        class="px-5 py-2.5 rounded-lg font-bold text-sm transition flex items-center gap-2"
+        :class="modoActual === MODOS_CMD.LINKTREE ? 'bg-slate-800 text-white shadow' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'"
+        @click="cambiarModo(MODOS_CMD.LINKTREE)"
+      >
+        <i class="bi bi-diagram-2"></i> CMD Linktree
+      </button>
     </div>
 
     <div v-if="cargando" class="text-center py-10 text-gray-400">
@@ -47,118 +71,66 @@ const handleSubmit = () => {
       :actions="false"
       @submit="handleSubmit"
     >
-      <!-- Configuración de Subdominio e Identidad -->
-      <div class="bg-slate-800 text-white rounded-xl p-5 mb-6">
-        <h3 class="text-lg font-bold mb-3 flex items-center gap-2">
-          <i class="bi bi-link-45deg"></i> Dominio e Identidad del Negocio
-        </h3>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-gray-800">
+      <!-- Subdominio Global -->
+      <div class="bg-slate-900 text-white rounded-xl p-5 mb-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-gray-800">
           <FormKit
             type="text"
-            v-model="configSitio.subdominio"
-            label="Subdominio deseado"
+            v-model="config.subdominio"
+            label="Subdominio del proyecto"
             placeholder="mimienda"
-            help="Escribe solo el nombre de tu marca"
+            help="Se usará para acceder a tu sitio o linktree"
             validation="required|alpha_node"
           />
           <FormKit
             type="text"
-            v-model="configSitio.tituloSitio"
-            label="Título del sitio"
+            v-model="config.tituloSitio"
+            label="Nombre del Negocio"
             placeholder="Mi Tienda Oficial"
             validation="required"
           />
-          <FormKit
-            type="text"
-            v-model="configSitio.descripcion"
-            label="Descripción corta"
-            placeholder="Venta de accesorios y artículos diversos"
-          />
         </div>
       </div>
 
-      <!-- Configuración Linktree / Redes Sociales -->
-      <div class="bg-gray-50 border border-gray-200 rounded-xl p-5 mb-6">
-        <h3 class="text-lg font-bold text-gray-800 mb-3 flex items-center gap-2">
-          <i class="bi bi-share"></i> Enlaces directos (Linktree)
-        </h3>
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          <FormKit
-            type="text"
-            v-model="configSitio.redes.whatsapp"
-            label="WhatsApp"
-            placeholder="+584120000000"
-          />
-          <FormKit
-            type="text"
-            v-model="configSitio.redes.instagram"
-            label="Instagram (Usuario)"
-            placeholder="@mitienda"
-          />
-          <FormKit
-            type="text"
-            v-model="configSitio.redes.facebook"
-            label="Facebook (URL o Página)"
-            placeholder="mitiendaoficial"
-          />
-          <FormKit
-            type="text"
-            v-model="configSitio.redes.telegram"
-            label="Telegram"
-            placeholder="t.me/mitienda"
-          />
-          <FormKit
-            type="url"
-            v-model="configSitio.redes.web"
-            label="Sitio Web Externo"
-            placeholder="https://mitienda.com"
-          />
+      <!-- MODO 1: CMD WEB APP -->
+      <div v-if="modoActual === MODOS_CMD.WEB" class="space-y-6">
+        <div class="border-l-4 border-blue-600 pl-4 py-1">
+          <h3 class="text-xl font-bold text-gray-800">Constructor de Web App / Catálogo</h3>
+          <p class="text-sm text-gray-500">Activa y ordena las secciones de tu sitio web</p>
         </div>
-      </div>
-
-      <!-- Gestión de Bloques / Secciones del Sitio -->
-      <div class="mb-6">
-        <h3 class="text-lg font-bold text-gray-800 mb-3 flex items-center gap-2">
-          <i class="bi bi-layers"></i> Estructura y Secciones del MVP
-        </h3>
 
         <div class="space-y-3">
           <div
-            v-for="(bloque, index) in configSitio.bloques"
+            v-for="(bloque, index) in config.bloquesWeb"
             :key="bloque.id"
-            class="flex items-center justify-between bg-white border border-gray-200 rounded-xl p-4 shadow-sm hover:border-blue-300 transition"
+            class="flex items-center justify-between bg-gray-50 border border-gray-200 rounded-xl p-4 shadow-sm"
           >
-            <!-- Control de activación y nombre del bloque -->
             <div class="flex items-center gap-3">
               <input
                 type="checkbox"
                 :checked="bloque.activo"
-                @change="toggleBloque(bloque.id)"
-                class="w-5 h-5 accent-emerald-600 rounded cursor-pointer"
+                @change="toggleBloqueWeb(bloque.id)"
+                class="w-5 h-5 accent-emerald-600 cursor-pointer"
               />
-              <span
-                class="font-semibold text-gray-800"
-                :class="{ 'line-through text-gray-400': !bloque.activo }"
-              >
+              <span class="font-semibold text-gray-800" :class="{ 'line-through text-gray-400': !bloque.activo }">
                 {{ bloque.tipo }}
               </span>
             </div>
 
-            <!-- Controles de ordenamiento -->
             <div class="flex items-center gap-2">
               <button
                 type="button"
                 :disabled="index === 0"
                 class="p-1.5 text-gray-500 hover:text-blue-600 disabled:opacity-30"
-                @click="moverBloque(index, -1)"
+                @click="moverBloqueWeb(index, -1)"
               >
                 <i class="bi bi-arrow-up-circle text-lg"></i>
               </button>
               <button
                 type="button"
-                :disabled="index === configSitio.bloques.length - 1"
+                :disabled="index === config.bloquesWeb.length - 1"
                 class="p-1.5 text-gray-500 hover:text-blue-600 disabled:opacity-30"
-                @click="moverBloque(index, 1)"
+                @click="moverBloqueWeb(index, 1)"
               >
                 <i class="bi bi-arrow-down-circle text-lg"></i>
               </button>
@@ -167,14 +139,85 @@ const handleSubmit = () => {
         </div>
       </div>
 
-      <!-- Botón Publicar / Guardar -->
+      <!-- MODO 2: CMD LINKTREE -->
+      <div v-if="modoActual === MODOS_CMD.LINKTREE" class="space-y-6">
+        <div class="border-l-4 border-emerald-600 pl-4 py-1">
+          <h3 class="text-xl font-bold text-gray-800">Perfil Linktree</h3>
+          <p class="text-sm text-gray-500">Administra tus enlaces directos a redes y canales de contacto</p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 bg-gray-50 p-4 rounded-xl border border-gray-200">
+          <FormKit
+            type="text"
+            v-model="config.linktree.tituloPerfil"
+            label="Título / Nombre en Perfil"
+            placeholder="Ej. @mitienda_oficial"
+          />
+          <FormKit
+            type="text"
+            v-model="config.linktree.biografia"
+            label="Biografía / Eslogan"
+            placeholder="Atención rápida por WhatsApp e Instagram"
+          />
+        </div>
+
+        <!-- Lista de Enlaces -->
+        <div class="space-y-3">
+          <div
+            v-for="(enlace, idx) in config.linktree.enlaces"
+            :key="enlace.id"
+            class="grid grid-cols-12 gap-3 items-center bg-white border border-gray-200 p-3 rounded-xl shadow-sm"
+          >
+            <div class="col-span-1 text-center">
+              <input
+                type="checkbox"
+                v-model="enlace.activo"
+                class="w-4 h-4 accent-emerald-600"
+              />
+            </div>
+            <div class="col-span-4">
+              <FormKit
+                type="text"
+                v-model="enlace.etiqueta"
+                placeholder="Nombre del enlace"
+              />
+            </div>
+            <div class="col-span-6">
+              <FormKit
+                type="text"
+                v-model="enlace.url"
+                placeholder="https://wa.me/... o enlace"
+              />
+            </div>
+            <div class="col-span-1 text-center">
+              <button
+                type="button"
+                class="text-red-500 hover:text-red-700"
+                @click="eliminarEnlaceLinktree(idx)"
+              >
+                <i class="bi bi-trash"></i>
+              </button>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg font-medium text-sm transition flex items-center gap-1"
+            @click="agregarEnlaceLinktree"
+          >
+            <i class="bi bi-plus-circle"></i> Agregar otro enlace
+          </button>
+        </div>
+      </div>
+
+      <!-- Guardado Unificado -->
       <button
         type="submit"
         :disabled="guardando"
-        class="w-full bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-400 text-white font-bold py-3 px-6 rounded-lg transition duration-200 shadow-md flex items-center justify-center gap-2"
+        class="w-full mt-8 bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-400 text-white font-bold py-3 px-6 rounded-lg transition shadow-md flex items-center justify-center gap-2"
       >
         <i class="bi bi-cloud-upload"></i>
-        {{ guardando ? 'Publicando cambios...' : 'Publicar Sitio Web' }}
+        {{ guardando ? 'Guardando...' : 'Publicar Configuración' }}
       </button>
     </FormKit>
   </div>
