@@ -1,0 +1,10 @@
+@import "tailwindcss"; 
+@import "bootstrap-icons/font/bootstrap-icons.css";
+
+body {
+  font-family: 'Inter', sans-serif;
+  background-color: #F3F4F6;
+  color: #212529;
+  margin: 0;
+  padding: 0;
+}
