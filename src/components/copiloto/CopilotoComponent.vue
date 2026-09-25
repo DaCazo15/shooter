@@ -10,10 +10,8 @@ const {
   cargando,
   cargandoDiagnostico,
   error,
-  insights,
   saludNegocio,
   tieneDataNegocio,
-  sugerenciasRapidas,
   obtenerDiagnostico,
   enviarMensaje,
   reiniciarConversacion
@@ -22,6 +20,7 @@ const {
 const abierto = ref(false)
 const inputTexto = ref('')
 const mensajesContainer = ref(null)
+const mensajeCopiadoId = ref(null)
 
 const toggleChat = () => {
   abierto.value = !abierto.value
@@ -30,23 +29,25 @@ const toggleChat = () => {
   }
 }
 
-const irASeccion = (ruta) => {
-  abierto.value = false
-  router.push(ruta)
-}
-
 const handleEnviar = async () => {
   const texto = inputTexto.value.trim()
-  if (!texto || cargando.value || !tieneDataNegocio.value) return
+  if (!texto || cargando.value) return
   inputTexto.value = ''
   await enviarMensaje(texto)
   scrollToBottom()
 }
 
-const usarSugerencia = async (sug) => {
-  if (cargando.value || !tieneDataNegocio.value) return
-  await enviarMensaje(sug)
-  scrollToBottom()
+const copiarTexto = async (id, texto) => {
+  try {
+    const limpio = texto.replace(/\*\*/g, '').replace(/---/g, '').trim()
+    await navigator.clipboard.writeText(limpio)
+    mensajeCopiadoId.value = id
+    setTimeout(() => {
+      mensajeCopiadoId.value = null
+    }, 2000)
+  } catch (e) {
+    console.warn('Error copiando al portapapeles:', e)
+  }
 }
 
 const scrollToBottom = () => {
@@ -68,44 +69,37 @@ onMounted(() => {
 
 const formatearMarkdown = (texto = '') => {
   return texto
-    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-    .replace(/\*(.*?)\*/g, '<em>$1</em>')
+    .replace(/\*\*(.*?)\*\*/g, '<strong class="font-bold text-[#1F1824]">$1</strong>')
+    .replace(/\*(.*?)\*/g, '<em class="italic text-gray-600">$1</em>')
+    .replace(/---/g, '<hr class="my-3 border-[#EADBDE]" />')
     .replace(/\n/g, '<br />')
 }
 </script>
 
 <template>
   <div>
-    <!-- Botón Flotante para Abrir Copiloto -->
+    <!-- Botón Flotante Estilo Gemini / Claude -->
     <div class="fixed bottom-6 right-6 z-50">
       <button
         @click="toggleChat"
         type="button"
-        class="group relative flex items-center gap-2.5 px-4 py-3 bg-[#1F1824] hover:bg-[#2D2334] text-[#FAF8F6] rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 border border-[#3E3147]"
+        class="group relative flex items-center gap-3 px-4 py-3 bg-[#1F1824] hover:bg-[#2A2131] text-[#FAF8F6] rounded-full shadow-2xl hover:shadow-[#9E5A78]/20 transition-all duration-300 transform hover:scale-[1.03] border border-[#3E3147]/80"
         title="Abrir Pandi Copilot IA"
       >
-        <!-- Icono Avatar -->
-        <div class="w-8 h-8 rounded-xl bg-linear-to-tr from-[#9E5A78] to-[#D99FB4] flex items-center justify-center text-white text-base shadow-sm group-hover:scale-110 transition">
+        <!-- Icono de Chispa / Sparkle Estilo Gemini -->
+        <div class="w-8 h-8 rounded-full bg-linear-to-tr from-[#9E5A78] via-[#C07E9B] to-[#FAF8F6] flex items-center justify-center text-white text-sm shadow-md group-hover:rotate-12 transition duration-300">
           <i class="bi bi-stars"></i>
         </div>
 
-        <div class="text-left hidden sm:block">
-          <span class="block text-xs font-bold font-serif-title leading-tight">Pandi Copilot</span>
-          <span class="block text-[10px] text-[#D99FB4] leading-tight">
-            {{ tieneDataNegocio ? 'Asesor IA' : 'Configura tu tienda' }}
+        <div class="text-left pr-1 hidden sm:block">
+          <div class="flex items-center gap-1.5">
+            <span class="text-xs font-bold font-serif-title tracking-wide text-[#FAF8F6]">Pandi Copilot</span>
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+          </div>
+          <span class="block text-[10px] text-[#D99FB4] font-medium tracking-tight">
+            TensorFlow IA
           </span>
         </div>
-
-        <!-- Indicador de Notificación / Alertas Críticas -->
-        <span
-          v-if="tieneDataNegocio && saludNegocio && saludNegocio.criticos > 0"
-          class="absolute -top-1.5 -right-1.5 flex h-4 w-4"
-        >
-          <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-          <span class="relative inline-flex rounded-full h-4 w-4 bg-red-500 text-[9px] font-bold text-white items-center justify-center">
-            {{ saludNegocio.criticos }}
-          </span>
-        </span>
       </button>
     </div>
 
@@ -116,158 +110,114 @@ const formatearMarkdown = (texto = '') => {
       class="fixed inset-0 bg-black/40 backdrop-blur-xs z-50 md:hidden"
     ></div>
 
-    <!-- Panel Lateral de Chat (Drawer / Modal) -->
-    <transition name="slide-panel">
+    <!-- Panel Lateral de Chat Estilo Claude / Gemini -->
+    <transition name="claude-slide">
       <aside
         v-if="abierto"
-        class="fixed inset-y-0 right-0 z-50 w-full sm:w-105 bg-white shadow-2xl flex flex-col border-l border-[#EADBDE] overflow-hidden"
+        class="fixed inset-y-0 right-0 z-50 w-full sm:max-w-lg sm:w-120 bg-[#FAF8F6] shadow-2xl flex flex-col border-l border-[#EADBDE] overflow-hidden"
       >
-        <!-- Encabezado del Copiloto -->
-        <div class="px-5 py-4 bg-[#1F1824] text-white flex items-center justify-between shrink-0 shadow-md">
+        <!-- Encabezado Minimalista Estilo Claude -->
+        <div class="px-5 py-3.5 bg-white/90 backdrop-blur-md border-b border-[#EADBDE] flex items-center justify-between shrink-0">
           <div class="flex items-center gap-3">
-            <div class="w-10 h-10 rounded-xl bg-linear-to-tr from-[#9E5A78] to-[#D99FB4] flex items-center justify-center text-white text-lg shadow-sm">
-              <i class="bi bi-robot"></i>
+            <div class="w-9 h-9 rounded-xl bg-linear-to-tr from-[#9E5A78] to-[#D99FB4] flex items-center justify-center text-white text-base shadow-sm">
+              <i class="bi bi-stars"></i>
             </div>
             <div>
               <div class="flex items-center gap-2">
-                <h3 class="text-sm font-bold font-serif-title text-[#FAF8F6]">Pandi Copilot</h3>
-                <span
-                  v-if="tieneDataNegocio"
-                  class="px-1.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-[10px] font-semibold flex items-center gap-1"
-                >
-                  <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> Claude 3.5
-                </span>
-                <span
-                  v-else
-                  class="px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 text-[10px] font-semibold flex items-center gap-1"
-                >
-                  <i class="bi bi-pause-circle"></i> En espera de datos
-                </span>
+                <h3 class="text-sm font-bold font-serif-title text-[#1F1824]">Pandi Copilot</h3>
               </div>
-              <p class="text-[11px] text-[#FAF8F6]/70">
-                {{ tieneDataNegocio ? 'Diagnóstico & asesoría en vivo' : 'Requiere datos de tu negocio' }}
-              </p>
+              <p class="text-[11px] text-gray-500">El asesor de tu marca</p>
             </div>
           </div>
 
+          <!-- Acciones de Cabecera -->
           <div class="flex items-center gap-1">
             <button
-              v-if="tieneDataNegocio"
               @click="reiniciarConversacion"
-              title="Reiniciar chat"
-              class="p-2 text-gray-400 hover:text-white hover:bg-white/10 rounded-xl transition text-xs"
+              title="Nueva conversación"
+              class="p-2 text-gray-500 hover:text-[#9E5A78] hover:bg-[#F7EFE9] rounded-xl transition text-xs flex items-center gap-1 font-semibold"
             >
-              <i class="bi bi-arrow-clockwise text-sm"></i>
+              <i class="bi bi-pencil-square text-sm"></i>
+              <span class="hidden sm:inline text-[11px]">Nuevo</span>
             </button>
             <button
               @click="abierto = false"
               title="Cerrar panel"
-              class="p-2 text-gray-400 hover:text-white hover:bg-white/10 rounded-xl transition text-xs"
+              class="p-2 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-xl transition text-sm"
             >
-              <i class="bi bi-x-lg text-sm"></i>
+              <i class="bi bi-x-lg"></i>
             </button>
           </div>
         </div>
 
-        <!-- Barra de Estado / Diagnóstico Rápido (Solo si hay datos) -->
+        <!-- Contenedor de Mensajes (Flujo Limpio Estilo Gemini/Claude) -->
         <div
-          v-if="tieneDataNegocio && saludNegocio && saludNegocio.totalInsights > 0"
-          class="bg-[#FAF8F6] border-b border-[#EADBDE] px-4 py-2.5 flex items-center justify-between shrink-0"
-        >
-          <div class="flex items-center gap-2 text-xs">
-            <span class="text-[11px] font-bold text-gray-600">Salud del negocio:</span>
-            <span v-if="saludNegocio.criticos > 0" class="px-2 py-0.5 rounded-full bg-red-100 text-red-700 font-bold text-[10px]">
-              {{ saludNegocio.criticos }} alertas críticas
-            </span>
-            <span v-if="saludNegocio.alertas > 0" class="px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 font-bold text-[10px]">
-              {{ saludNegocio.alertas }} sugerencias
-            </span>
-          </div>
-          <button
-            @click="usarSugerencia('Analiza las alertas y dame un plan de acción para hoy')"
-            class="text-[11px] font-bold text-[#9E5A78] hover:underline"
-          >
-            Ver plan
-          </button>
-        </div>
-
-        <!-- Estado Bloqueado / No Disponible (Sin datos en Firebase) -->
-        <div
-          v-if="!tieneDataNegocio"
-          class="flex-1 p-6 flex flex-col items-center justify-center text-center space-y-4 bg-[#FAF8F6]/60"
-        >
-          <div class="w-16 h-16 rounded-3xl bg-[#F7EFE9] text-[#9E5A78] flex items-center justify-center text-3xl shadow-xs">
-            <i class="bi bi-boxes"></i>
-          </div>
-
-          <div class="space-y-1.5 max-w-xs">
-            <h4 class="text-sm font-bold font-serif-title text-[#1F1824]">Copiloto IA no disponible aún</h4>
-            <p class="text-xs text-gray-500 leading-relaxed">
-              El copiloto necesita información de tu negocio para analizar costos, márgenes y alertas de reposición.
-            </p>
-          </div>
-
-          <!-- Acciones de Onboarding -->
-          <div class="w-full max-w-xs space-y-2 pt-2">
-            <button
-              @click="irASeccion('/dashboard/catalogo')"
-              class="w-full py-2.5 px-4 bg-[#9E5A78] hover:bg-[#864662] text-white text-xs font-bold rounded-xl shadow-xs transition flex items-center justify-center gap-2"
-            >
-              <i class="bi bi-plus-circle"></i> Registrar primer producto
-            </button>
-            <button
-              @click="irASeccion('/dashboard/inventario')"
-              class="w-full py-2.5 px-4 bg-white hover:bg-gray-50 text-[#1F1824] border border-[#EADBDE] text-xs font-bold rounded-xl transition flex items-center justify-center gap-2"
-            >
-              <i class="bi bi-box-seam"></i> Registrar insumo en inventario
-            </button>
-          </div>
-
-          <p class="text-[10px] text-gray-400">
-            Al registrar tu primer producto o material, Pandi Copilot se habilitará automáticamente.
-          </p>
-        </div>
-
-        <!-- Contenedor de Mensajes (Cuando sí hay datos) -->
-        <div
-          v-else
           ref="mensajesContainer"
-          class="flex-1 p-4 overflow-y-auto space-y-4 bg-[#FAF8F6]/40 text-xs"
+          class="flex-1 p-5 overflow-y-auto space-y-6 text-xs text-[#1F1824]"
         >
+          <!-- Mensaje cuando no hay conversación iniciada -->
+          <div v-if="mensajes.length === 0" class="h-full flex flex-col items-center justify-center text-center p-6 space-y-3">
+            <div class="w-12 h-12 rounded-2xl bg-[#F7EFE9] text-[#9E5A78] flex items-center justify-center text-2xl shadow-xs border border-[#EADBDE]">
+              <i class="bi bi-stars"></i>
+            </div>
+            <div class="space-y-1 max-w-xs">
+              <h4 class="text-sm font-bold font-serif-title text-[#1F1824]">¿En qué te puedo asesorar?</h4>
+              <p class="text-xs text-gray-500 leading-relaxed">
+                Escribe tu consulta sobre precios, inventario, ventas o tiempos de taller.
+              </p>
+            </div>
+          </div>
+
+          <!-- Lista de Mensajes -->
           <div
             v-for="msg in mensajes"
             :key="msg.id"
-            class="flex flex-col"
-            :class="msg.role === 'user' ? 'items-end' : 'items-start'"
+            class="space-y-1"
           >
-            <div class="flex items-start gap-2 max-w-[85%]">
-              <!-- Avatar del Asistente -->
-              <div
-                v-if="msg.role === 'assistant'"
-                class="w-6 h-6 rounded-lg bg-[#9E5A78] text-white flex items-center justify-center text-xs shrink-0 mt-1 shadow-xs"
-              >
+            <!-- 1. Mensaje del Usuario (Burbuja pulida a la derecha) -->
+            <div v-if="msg.role === 'user'" class="flex justify-end">
+              <div class="max-w-[85%] bg-[#1F1824] text-[#FAF8F6] px-4 py-3 rounded-2xl rounded-tr-xs shadow-xs text-xs font-medium leading-relaxed">
+                {{ msg.content }}
+              </div>
+            </div>
+
+            <!-- 2. Mensaje del Asistente (Flujo limpio a la izquierda estilo Claude/Gemini) -->
+            <div v-else class="flex items-start gap-3 max-w-[95%]">
+              <div class="w-7 h-7 rounded-lg bg-[#FAF8F6] border border-[#EADBDE] text-[#9E5A78] flex items-center justify-center text-xs shrink-0 mt-0.5 shadow-xs">
                 <i class="bi bi-stars"></i>
               </div>
 
-              <!-- Burbuja de Mensaje -->
-              <div
-                class="rounded-2xl px-4 py-3 shadow-xs leading-relaxed"
-                :class="msg.role === 'user'
-                  ? 'bg-[#9E5A78] text-white rounded-tr-xs'
-                  : 'bg-white text-[#1F1824] border border-[#EADBDE] rounded-tl-xs'"
-              >
-                <div v-html="formatearMarkdown(msg.content)"></div>
+              <div class="space-y-2 flex-1">
+                <div class="bg-white p-4 rounded-2xl border border-[#EADBDE] shadow-xs text-xs text-[#1F1824] leading-relaxed">
+                  <div v-html="formatearMarkdown(msg.content)"></div>
+                </div>
+
+                <!-- Botones de Utilidad al pie de la respuesta -->
+                <div class="flex items-center gap-2 text-[11px] text-gray-400 pl-1">
+                  <button
+                    @click="copiarTexto(msg.id, msg.content)"
+                    class="hover:text-[#9E5A78] transition flex items-center gap-1 font-semibold"
+                    title="Copiar respuesta"
+                  >
+                    <i :class="mensajeCopiadoId === msg.id ? 'bi bi-check2 text-emerald-600' : 'bi bi-clipboard'"></i>
+                    <span>{{ mensajeCopiadoId === msg.id ? '¡Copiado!' : 'Copiar' }}</span>
+                  </button>
+                  <span>•</span>
+                  <span class="text-gray-400 flex items-center gap-1">
+                    <i class="bi bi-shield-check text-[#9E5A78]"></i> Segunda opinión sugerida
+                  </span>
+                </div>
               </div>
             </div>
           </div>
 
-          <!-- Indicador de "Escribiendo / Analizando" -->
-          <div v-if="cargando" class="flex items-start gap-2 max-w-[85%]">
-            <div class="w-6 h-6 rounded-lg bg-[#9E5A78] text-white flex items-center justify-center text-xs shrink-0 mt-1">
-              <i class="bi bi-stars"></i>
+          <!-- Indicador de Respuesta en Progreso -->
+          <div v-if="cargando" class="flex items-start gap-3 max-w-[85%]">
+            <div class="w-7 h-7 rounded-lg bg-[#FAF8F6] border border-[#EADBDE] text-[#9E5A78] flex items-center justify-center text-xs shrink-0 mt-0.5 shadow-xs">
+              <i class="bi bi-stars animate-spin text-sm"></i>
             </div>
-            <div class="bg-white text-[#1F1824] border border-[#EADBDE] rounded-2xl rounded-tl-xs px-4 py-3 shadow-xs flex items-center gap-2">
-              <span class="text-[11px] text-gray-500 font-medium">Pandi está analizando tus datos</span>
+            <div class="bg-white border border-[#EADBDE] rounded-2xl px-4 py-3 shadow-xs flex items-center gap-2">
+              <span class="text-xs text-gray-500 font-medium">Pandi Copilot analizando con TensorFlow</span>
               <span class="inline-flex gap-1">
                 <span class="w-1.5 h-1.5 rounded-full bg-[#9E5A78] animate-bounce"></span>
                 <span class="w-1.5 h-1.5 rounded-full bg-[#9E5A78] animate-bounce [animation-delay:0.2s]"></span>
@@ -275,60 +225,32 @@ const formatearMarkdown = (texto = '') => {
               </span>
             </div>
           </div>
-
-          <!-- Banner de Error si falla la API -->
-          <div v-if="error" class="bg-red-50 border border-red-200 rounded-xl p-3 text-red-700 flex items-center justify-between text-xs">
-            <span class="flex items-center gap-1.5">
-              <i class="bi bi-exclamation-octagon-fill text-red-500"></i>
-              <span>Hubo un problema de conexión con la IA.</span>
-            </span>
-            <button
-              @click="handleEnviar"
-              class="px-2.5 py-1 bg-red-600 text-white rounded-lg font-bold text-[11px] hover:bg-red-700 transition"
-            >
-              Reintentar
-            </button>
-          </div>
         </div>
 
-        <!-- Sugerencias Rápidas (Solo si hay datos) -->
-        <div v-if="tieneDataNegocio" class="px-4 py-2 bg-white border-t border-[#FAF8F6] shrink-0">
-          <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1.5">Consultas sugeridas</p>
-          <div class="flex gap-1.5 overflow-x-auto pb-1 no-scrollbar">
-            <button
-              v-for="sug in sugerenciasRapidas"
-              :key="sug"
-              @click="usarSugerencia(sug)"
-              :disabled="cargando"
-              class="px-2.5 py-1 bg-[#FAF8F6] hover:bg-[#F7EFE9] text-[#9E5A78] border border-[#EADBDE] rounded-lg text-[11px] font-medium whitespace-nowrap transition shrink-0 disabled:opacity-50"
-            >
-              {{ sug }}
-            </button>
-          </div>
-        </div>
-
-        <!-- Input de Texto y Botón Enviar -->
+        <!-- Barra de Entrada Flotante Estilo Gemini / Claude -->
         <div class="p-4 bg-white border-t border-[#EADBDE] shrink-0">
-          <form @submit.prevent="handleEnviar" class="flex items-center gap-2">
-            <div class="relative flex-1">
+          <form @submit.prevent="handleEnviar" class="relative">
+            <div class="bg-[#FAF8F6] border border-[#EADBDE] rounded-2xl focus-within:ring-2 focus-within:ring-[#9E5A78] focus-within:border-transparent transition-all shadow-xs flex items-center p-1.5 pr-2">
               <input
                 v-model="inputTexto"
                 type="text"
-                :placeholder="tieneDataNegocio ? 'Pregúntale a Pandi (ej: ¿cuánto stock de resina queda?)...' : 'Registra productos o insumos para habilitar el chat...'"
-                :disabled="cargando || !tieneDataNegocio"
-                class="w-full pl-3.5 pr-10 py-2.5 text-xs bg-[#FAF8F6] border border-[#EADBDE] rounded-xl focus:ring-2 focus:ring-[#9E5A78] focus:outline-none disabled:opacity-50 placeholder-gray-400"
+                placeholder="Hazle una consulta a Pandi Copilot..."
+                :disabled="cargando"
+                class="w-full px-3 py-2 text-xs bg-transparent focus:outline-none placeholder-gray-400 font-medium"
               />
               <button
                 type="submit"
-                :disabled="!inputTexto.trim() || cargando || !tieneDataNegocio"
-                class="absolute right-1.5 top-1.5 p-1.5 bg-[#9E5A78] hover:bg-[#864662] text-white rounded-lg transition disabled:opacity-30 flex items-center justify-center shadow-xs"
+                :disabled="!inputTexto.trim() || cargando"
+                class="w-8 h-8 rounded-xl bg-[#9E5A78] hover:bg-[#864662] text-white transition disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center shadow-xs shrink-0"
+                title="Enviar mensaje"
               >
-                <i class="bi bi-arrow-up text-xs font-bold"></i>
+                <i class="bi bi-arrow-up text-sm font-bold"></i>
               </button>
             </div>
           </form>
+
           <p class="text-[10px] text-gray-400 text-center mt-2">
-            {{ tieneDataNegocio ? 'Pandi Copilot utiliza datos en vivo de tu catálogo, inventario y cuentas.' : 'Bloqueado temporalmente: agrega datos en el catálogo o inventario.' }}
+            Considera siempre una segunda opinión.
           </p>
         </div>
       </aside>
@@ -337,13 +259,13 @@ const formatearMarkdown = (texto = '') => {
 </template>
 
 <style scoped>
-.slide-panel-enter-active,
-.slide-panel-leave-active {
-  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease;
+.claude-slide-enter-active,
+.claude-slide-leave-active {
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease;
 }
 
-.slide-panel-enter-from,
-.slide-panel-leave-to {
+.claude-slide-enter-from,
+.claude-slide-leave-to {
   transform: translateX(100%);
   opacity: 0;
 }
@@ -356,3 +278,4 @@ const formatearMarkdown = (texto = '') => {
   scrollbar-width: none;
 }
 </style>
+

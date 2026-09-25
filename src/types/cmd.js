@@ -12,17 +12,20 @@ export const BLOQUES_WEB_DEFECTO = [
 ]
 
 export const CONFIG_LINKTREE_DEFECTO = {
-  tituloPerfil: '',
-  biografia: '',
-  avatarUrl: '',
-  colorFondo: '#0f172a',
-  colorBoton: '#2563eb',
+  titulo: 'Pandibuy Atelier',
+  tituloPerfil: 'Pandibuy Atelier',
+  bio: 'Joyería y piezas de diseño artesanal hechas con amor.',
+  biografia: 'Joyería y piezas de diseño artesanal hechas con amor.',
+  avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80',
+  colorFondo: '#1F1824',
+  colorBoton: '#9E5A78',
+  colorTextoBoton: '#FAF8F6',
   enlaces: [
-    { id: 'wa', red: 'whatsapp', etiqueta: 'WhatsApp Directo', url: '', activo: true },
-    { id: 'ig', red: 'instagram', etiqueta: 'Instagram Oficial', url: '', activo: true },
-    { id: 'fb', red: 'facebook', etiqueta: 'Página de Facebook', url: '', activo: true },
-    { id: 'tg', red: 'telegram', etiqueta: 'Canal de Telegram', url: '', activo: true },
-    { id: 'wb', red: 'web', etiqueta: 'Sitio Web Principal', url: '', activo: true }
+    { id: 'wa', red: 'whatsapp', icono: 'bi bi-whatsapp', etiqueta: 'WhatsApp Directo', url: 'https://wa.me/', activo: true },
+    { id: 'ig', red: 'instagram', icono: 'bi bi-instagram', etiqueta: 'Instagram Oficial', url: 'https://instagram.com/', activo: true },
+    { id: 'fb', red: 'facebook', icono: 'bi bi-facebook', etiqueta: 'Página de Facebook', url: 'https://facebook.com/', activo: true },
+    { id: 'tg', red: 'telegram', icono: 'bi bi-telegram', etiqueta: 'Canal de Telegram', url: 'https://t.me/', activo: true },
+    { id: 'wb', red: 'web', icono: 'bi bi-globe', etiqueta: 'Sitio Web Principal', url: '#catalogo', activo: true }
   ]
 }
 

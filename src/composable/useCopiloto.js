@@ -1,89 +1,51 @@
 import { ref, computed } from 'vue'
-import { auth } from '../config/firestore'
+import { neuralCopilot } from '../services/tfCopilot/model'
+import { generarConsejoConversacional } from '../services/tfCopilot/adviceEngine'
+import { useAuthStore } from '../stores/authStore'
+import { useClientes } from './useClientes'
+import { useCatalogo } from './useCatalogo'
+import { useInventario } from './useInventario'
 
 /**
- * Composable para interactuar con Pandi Copilot desde el frontend de Vue.
+ * Composable para interactuar con Pandi Copilot impulsado por TensorFlow.js.
+ * Inferencia 100% en el cliente, consejos artesanales y cláusula obligatoria de segunda opinión.
  */
 export function useCopiloto() {
-  const mensajes = ref([
-    {
-      id: 'bienvenida',
-      role: 'assistant',
-      content: '¡Epa! Soy tu **Pandi Copilot** 🐼. Puedo revisar tu catálogo, avisarte qué materiales se están agotando en el taller o ver cómo van tus ventas y clientes. ¿En qué te echo una mano hoy?'
-    }
-  ])
+  const authStore = useAuthStore()
+  const { clientes, obtenerClientes } = useClientes()
+  const { catalogo, iniciarEscuchaCatalogo } = useCatalogo()
+  const { materiales, obtenerMateriales } = useInventario()
 
+  const mensajes = ref([])
   const cargando = ref(false)
   const cargandoDiagnostico = ref(false)
   const error = ref(null)
-  const insights = ref([])
   const saludNegocio = ref(null)
 
-  // Determina si el negocio tiene data en Firestore
-  const tieneDataNegocio = computed(() => {
-    if (!saludNegocio.value) return true // Asume true mientras carga o en fallback
-    return saludNegocio.value.tieneData !== false
-  })
+  const tieneDataNegocio = computed(() => true)
 
-  const sugerenciasRapidas = [
-    '📦 ¿Qué insumos tengo en stock crítico?',
-    '📊 Analiza los precios y márgenes de mi catálogo',
-    '👥 ¿Quiénes son mis clientes más recurrentes?',
-    '💡 ¿Qué oportunidades de venta detectas hoy?'
-  ]
-
-  // Obtener diagnóstico y lista de insights accionables al entrar al dashboard
+  // Diagnóstico inicial en local
   const obtenerDiagnostico = async () => {
     cargandoDiagnostico.value = true
     try {
-      let idToken = ''
-      if (auth?.currentUser) {
-        idToken = await auth.currentUser.getIdToken()
-      }
+      // Cargar colecciones en background para alimentar al Copiloto
+      obtenerClientes()
+      iniciarEscuchaCatalogo()
+      obtenerMateriales()
 
-      const res = await fetch('/api/copiloto', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(idToken ? { 'Authorization': `Bearer ${idToken}` } : {})
-        },
-        body: JSON.stringify({ soloAnalisis: true })
-      })
-
-      if (res.ok) {
-        const data = await res.json()
-        saludNegocio.value = data.salud || null
-        insights.value = data.insights || []
-
-        if (data.salud && data.salud.tieneData === false) {
-          // Negocio sin datos registrados
-          mensajes.value = [
-            {
-              id: 'sin_data',
-              role: 'assistant',
-              content: '¡Epa! 🐼 Para poder ayudarte con análisis, precios y alertas de stock, primero necesitas registrar al menos **1 producto en tu Catálogo** o **1 insumo en tu Inventario**. ¡Una vez que agregues tus datos, me activo automáticamente!'
-            }
-          ]
-          return
-        }
-
-        // Si hay alertas críticas, actualizar el mensaje de bienvenida proactivamente
-        if (data.insights?.length > 0) {
-          const criticos = data.insights.filter(i => i.severidad === 'critico')
-          if (criticos.length > 0) {
-            mensajes.value[0].content = `¡Epa! Soy tu **Pandi Copilot** 🐼. Noté **${criticos.length} alertas prioritarias** en tu negocio (ej. *${criticos[0].titulo}*). ¿Quieres que las revisemos o prefieres consultar otra cosa?`
-          }
-        }
-      }
+      // Inicializar y pre-entrenar la red neuronal en background
+      await neuralCopilot.entrenar()
+      saludNegocio.value = { tieneData: true, estado: 'optimo' }
     } catch (err) {
-      console.warn('Diagnóstico local activo:', err.message)
+      console.warn('Inicialización de red neuronal Copilot:', err)
     } finally {
       cargandoDiagnostico.value = false
     }
   }
 
+  // Enviar mensaje e inferir con TensorFlow.js
   const enviarMensaje = async (textoUsuario) => {
-    if (!textoUsuario.trim() || cargando.value || !tieneDataNegocio.value) return
+    if (!textoUsuario || !textoUsuario.trim() || cargando.value) return
 
     const mensajeId = Date.now().toString()
 
@@ -97,40 +59,38 @@ export function useCopiloto() {
     error.value = null
 
     try {
-      let idToken = ''
-      if (auth?.currentUser) {
-        idToken = await auth.currentUser.getIdToken()
-      }
+      // Asegurar que las listas del negocio estén cargadas
+      if (clientes.value.length === 0) obtenerClientes()
+      if (catalogo.value.length === 0) iniciarEscuchaCatalogo()
+      if (materiales.value.length === 0) obtenerMateriales()
 
-      const res = await fetch('/api/copiloto', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(idToken ? { 'Authorization': `Bearer ${idToken}` } : {})
-        },
-        body: JSON.stringify({
-          messages: mensajes.value.map(m => ({ role: m.role, content: m.content }))
-        })
+      // Simular un pequeño retardo natural de pensamiento (350ms)
+      await new Promise(r => setTimeout(r, 350))
+
+      // 1. Inferencia de intención con la red neuronal TensorFlow.js
+      const { intent, confidence } = await neuralCopilot.predecirIntencion(textoUsuario)
+
+      // 2. Generación del consejo estructurado
+      const respuesta = generarConsejoConversacional(intent, textoUsuario, {
+        confianza: confidence,
+        user: authStore.user,
+        clientes: clientes.value || [],
+        catalogo: catalogo.value || [],
+        materiales: materiales.value || []
       })
 
-      if (!res.ok) {
-        const errData = await res.json().catch(() => ({}))
-        throw new Error(errData.error || `Error ${res.status}: no se pudo conectar con el copiloto`)
-      }
-
-      const data = await res.json()
       mensajes.value.push({
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: data.content
+        content: respuesta
       })
     } catch (err) {
-      console.error('Error enviando mensaje al copiloto:', err)
+      console.error('Error en inferencia de Pandi Copilot:', err)
       error.value = err.message
       mensajes.value.push({
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: `⚠️ *Ups, ocurrió un detalle:* ${err.message}`
+        content: `⚠️ *Ocurrió un detalle al procesar la recomendación:* ${err.message}`
       })
     } finally {
       cargando.value = false
@@ -138,14 +98,7 @@ export function useCopiloto() {
   }
 
   const reiniciarConversacion = () => {
-    if (!tieneDataNegocio.value) return
-    mensajes.value = [
-      {
-        id: 'bienvenida',
-        role: 'assistant',
-        content: '¡Epa! Conversación reiniciada. ¿Qué quieres consultar de tu negocio hoy?'
-      }
-    ]
+    mensajes.value = []
     error.value = null
   }
 
@@ -154,10 +107,8 @@ export function useCopiloto() {
     cargando,
     cargandoDiagnostico,
     error,
-    insights,
     saludNegocio,
     tieneDataNegocio,
-    sugerenciasRapidas,
     obtenerDiagnostico,
     enviarMensaje,
     reiniciarConversacion

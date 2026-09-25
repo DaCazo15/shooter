@@ -105,15 +105,15 @@ const abrirLinktree = () => {
                   class="flex items-center gap-3 px-4 py-2.5 text-xs font-semibold text-gray-700 hover:bg-[#F7EFE9] hover:text-[#9E5A78] transition"
                 >
                   <i class="bi bi-person-gear text-sm text-[#9E5A78]"></i>
-                  <span>Configurar Perfil & Negocio</span>
+                  <span>Configurar Perfil</span>
                 </router-link>
 
                 <router-link
                   to="/dashboard/configuracion"
                   class="flex items-center gap-3 px-4 py-2.5 text-xs font-semibold text-gray-700 hover:bg-[#F7EFE9] hover:text-[#9E5A78] transition"
                 >
-                  <i class="bi bi-shield-check text-sm text-[#9E5A78]"></i>
-                  <span>Términos, Privacidad & Legal</span>
+                  <i class="bi bi-gear text-sm text-[#9E5A78]"></i>
+                  <span>Configuración</span>
                 </router-link>
 
                 <router-link
@@ -121,7 +121,7 @@ const abrirLinktree = () => {
                   class="flex items-center gap-3 px-4 py-2.5 text-xs font-semibold text-gray-700 hover:bg-[#F7EFE9] hover:text-[#9E5A78] transition"
                 >
                   <i class="bi bi-palette text-sm text-[#9E5A78]"></i>
-                  <span>Personalizar Web & Linktree</span>
+                  <span>Abrir CMD</span>
                 </router-link>
               </div>
 

@@ -130,7 +130,9 @@ export const useCmdStore = defineStore('cmd', () => {
   // Configuración del Linktree
   const linktree = ref({
     titulo: 'Pandibuy Atelier',
+    tituloPerfil: 'Pandibuy Atelier',
     bio: 'Joyería y piezas de diseño artesanal hechas con amor.',
+    biografia: 'Joyería y piezas de diseño artesanal hechas con amor.',
     avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80',
     colorFondo: '#1F1824',
     colorBoton: '#9E5A78',
@@ -192,22 +194,23 @@ export const useCmdStore = defineStore('cmd', () => {
 
   // Guardar en Firestore y mantener en Store
   const guardarEnFirestore = async (userId = 'demo-user-1') => {
+    const validUserId = (userId && typeof userId === 'string' && userId.trim()) ? userId.trim() : 'demo-user-1'
     guardando.value = true
-    ownerUid.value = userId
+    ownerUid.value = validUserId
     const payload = {
-      uid: userId,
-      subdominio: subdominio.value,
-      tituloSitio: tituloSitio.value,
-      descripcion: descripcion.value,
-      bloquesWeb: bloquesWeb.value,
-      linktree: linktree.value,
-      footerConfig: footerConfig.value,
+      uid: validUserId,
+      subdominio: subdominio.value || 'pandibuy',
+      tituloSitio: tituloSitio.value || '',
+      descripcion: descripcion.value || '',
+      bloquesWeb: bloquesWeb.value || [],
+      linktree: linktree.value || {},
+      footerConfig: footerConfig.value || {},
       ultimaActualizacion: new Date().toISOString()
     }
 
     try {
       if (db) {
-        await setDoc(doc(db, 'sitios_cmd', userId), payload, { merge: true })
+        await setDoc(doc(db, 'sitios_cmd', validUserId), payload, { merge: true })
       }
       return true
     } catch (e) {
@@ -220,11 +223,15 @@ export const useCmdStore = defineStore('cmd', () => {
 
   // Cargar de Firestore buscando por UID o por subdominio
   const cargarDeFirestore = async (userIdOrSubdominio = 'demo-user-1') => {
+    const target = (userIdOrSubdominio && typeof userIdOrSubdominio === 'string' && userIdOrSubdominio.trim())
+      ? userIdOrSubdominio.trim()
+      : 'demo-user-1'
+
     cargando.value = true
     try {
       if (db) {
         // 1. Intentar buscar por ID directo de documento (UID)
-        const snap = await getDoc(doc(db, 'sitios_cmd', userIdOrSubdominio))
+        const snap = await getDoc(doc(db, 'sitios_cmd', target))
         if (snap.exists()) {
           ownerUid.value = snap.id
           const data = snap.data()
@@ -232,13 +239,21 @@ export const useCmdStore = defineStore('cmd', () => {
           if (data.tituloSitio) tituloSitio.value = data.tituloSitio
           if (data.descripcion) descripcion.value = data.descripcion
           if (data.bloquesWeb) bloquesWeb.value = data.bloquesWeb
-          if (data.linktree) linktree.value = data.linktree
+          if (data.linktree) {
+            // Normalizar y sincronizar campos alias
+            const lt = { ...data.linktree }
+            if (lt.titulo && !lt.tituloPerfil) lt.tituloPerfil = lt.titulo
+            if (lt.tituloPerfil && !lt.titulo) lt.titulo = lt.tituloPerfil
+            if (lt.bio && !lt.biografia) lt.biografia = lt.bio
+            if (lt.biografia && !lt.bio) lt.bio = lt.biografia
+            linktree.value = lt
+          }
           if (data.footerConfig) footerConfig.value = data.footerConfig
           return
         }
 
         // 2. Si no es UID directo, buscar por el campo subdominio
-        const q = query(collection(db, 'sitios_cmd'), where('subdominio', '==', userIdOrSubdominio))
+        const q = query(collection(db, 'sitios_cmd'), where('subdominio', '==', target))
         const querySnap = await getDocs(q)
         if (!querySnap.empty) {
           const docFound = querySnap.docs[0]
@@ -248,16 +263,23 @@ export const useCmdStore = defineStore('cmd', () => {
           if (data.tituloSitio) tituloSitio.value = data.tituloSitio
           if (data.descripcion) descripcion.value = data.descripcion
           if (data.bloquesWeb) bloquesWeb.value = data.bloquesWeb
-          if (data.linktree) linktree.value = data.linktree
+          if (data.linktree) {
+            const lt = { ...data.linktree }
+            if (lt.titulo && !lt.tituloPerfil) lt.tituloPerfil = lt.titulo
+            if (lt.tituloPerfil && !lt.titulo) lt.titulo = lt.tituloPerfil
+            if (lt.bio && !lt.biografia) lt.biografia = lt.bio
+            if (lt.biografia && !lt.bio) lt.bio = lt.biografia
+            linktree.value = lt
+          }
           if (data.footerConfig) footerConfig.value = data.footerConfig
           return
         }
       }
       // Fallback
-      ownerUid.value = userIdOrSubdominio
+      ownerUid.value = target
     } catch (e) {
       console.warn('Error cargando configuración, usando fallback local:', e)
-      ownerUid.value = userIdOrSubdominio
+      ownerUid.value = target
     } finally {
       cargando.value = false
     }

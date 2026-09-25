@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { useAuthStore } from '../../stores/authStore'
 
 const authStore = useAuthStore()
@@ -17,7 +17,33 @@ const formData = ref({
   avatarUrl: authStore.user.avatarUrl || ''
 })
 
+const guardando = ref(false)
 const guardadoExitoso = ref(false)
+
+const sincronizarDatos = () => {
+  if (authStore.user) {
+    formData.value = {
+      displayName: authStore.user.displayName || '',
+      businessName: authStore.user.businessName || '',
+      bio: authStore.user.bio || '',
+      email: authStore.user.email || '',
+      phone: authStore.user.phone || '',
+      whatsapp: authStore.user.whatsapp || '',
+      instagram: authStore.user.instagram || '',
+      currency: authStore.user.currency || 'USD',
+      currencySymbol: authStore.user.currencySymbol || '$',
+      avatarUrl: authStore.user.avatarUrl || ''
+    }
+  }
+}
+
+onMounted(() => {
+  sincronizarDatos()
+})
+
+watch(() => authStore.user, () => {
+  sincronizarDatos()
+}, { deep: true })
 
 const monedas = [
   { codigo: 'USD', simbolo: '$', nombre: 'Dólares Estadounidenses ($ USD)' },
@@ -36,11 +62,18 @@ const actualizarMoneda = (e) => {
 }
 
 const handleGuardar = async () => {
-  await authStore.updateProfile(formData.value)
-  guardadoExitoso.value = true
-  setTimeout(() => {
-    guardadoExitoso.value = false
-  }, 3500)
+  guardando.value = true
+  try {
+    await authStore.updateProfile(formData.value)
+    guardadoExitoso.value = true
+    setTimeout(() => {
+      guardadoExitoso.value = false
+    }, 3500)
+  } catch (e) {
+    console.error('Error guardando perfil:', e)
+  } finally {
+    guardando.value = false
+  }
 }
 </script>
 
@@ -52,7 +85,7 @@ const handleGuardar = async () => {
         <h1 class="text-2xl font-bold font-serif-title text-[#1F1824]">Perfil de Negocio & Usuario</h1>
         <p class="text-xs text-gray-500 mt-1">Configura los datos oficiales de tu marca, canales de contacto y preferencias monetarias</p>
       </div>
-      <div v-if="guardadoExitoso" class="bg-emerald-50 text-emerald-700 px-4 py-2 rounded-xl text-xs font-bold border border-emerald-200 flex items-center gap-2 animate-bounce">
+      <div v-if="guardadoExitoso" class="bg-emerald-50 text-emerald-700 px-4 py-2 rounded-xl text-xs font-bold border border-emerald-200 flex items-center gap-2">
         <i class="bi bi-check-circle-fill"></i> ¡Datos guardados correctamente!
       </div>
     </div>
@@ -78,7 +111,7 @@ const handleGuardar = async () => {
             <label class="block text-xs font-bold uppercase tracking-wider text-gray-700">URL del Logo o Avatar</label>
             <input
               v-model="formData.avatarUrl"
-              type="url"
+              type="text"
               placeholder="https://ejemplo.com/mi-logo.jpg"
               class="w-full px-3.5 py-2 text-xs bg-[#FAF8F6] border border-[#EADBDE] rounded-xl focus:ring-2 focus:ring-[#9E5A78] focus:outline-none"
             />
@@ -146,6 +179,22 @@ const handleGuardar = async () => {
           </div>
 
           <div>
+            <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">Teléfono de Contacto / Llamadas</label>
+            <div class="relative">
+              <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-600 font-bold">
+                <i class="bi bi-telephone-fill"></i>
+              </span>
+              <input
+                v-model="formData.phone"
+                type="text"
+                placeholder="+582121234567"
+                class="w-full pl-9 pr-3.5 py-2 text-xs bg-[#FAF8F6] border border-[#EADBDE] rounded-xl focus:ring-2 focus:ring-[#9E5A78] focus:outline-none font-medium"
+              />
+            </div>
+            <p class="text-[10px] text-gray-400 mt-1">Línea fija o móvil para llamadas directas de clientes.</p>
+          </div>
+
+          <div>
             <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">Instagram (@usuario)</label>
             <div class="relative">
               <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-rose-500 font-bold">
@@ -161,6 +210,16 @@ const handleGuardar = async () => {
           </div>
 
           <div>
+            <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">Correo de Notificaciones</label>
+            <input
+              v-model="formData.email"
+              type="email"
+              placeholder="contacto@pandibuy.com"
+              class="w-full px-3.5 py-2 text-xs bg-[#FAF8F6] border border-[#EADBDE] rounded-xl focus:ring-2 focus:ring-[#9E5A78] focus:outline-none font-medium"
+            />
+          </div>
+
+          <div class="sm:col-span-2">
             <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">Moneda Principal del Sistema</label>
             <select
               :value="formData.currency"
@@ -172,29 +231,27 @@ const handleGuardar = async () => {
               </option>
             </select>
           </div>
-
-          <div>
-            <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">Correo de Notificaciones</label>
-            <input
-              v-model="formData.email"
-              type="email"
-              placeholder="contacto@pandibuy.com"
-              class="w-full px-3.5 py-2 text-xs bg-[#FAF8F6] border border-[#EADBDE] rounded-xl focus:ring-2 focus:ring-[#9E5A78] focus:outline-none font-medium"
-            />
-          </div>
         </div>
       </div>
 
-      <!-- Botón de Acción -->
-      <div class="flex justify-end">
+      <!-- Botón de Acción con Feedback Inmediato -->
+      <div class="flex items-center justify-end gap-3">
+        <span v-if="guardadoExitoso" class="text-xs font-bold text-emerald-600 flex items-center gap-1.5 animate-in fade-in">
+          <i class="bi bi-check-circle-fill"></i> ¡Cambios guardados con éxito!
+        </span>
+
         <button
           type="submit"
-          class="px-8 py-3 bg-[#9E5A78] hover:bg-[#864662] text-white font-bold text-xs rounded-xl shadow-md hover:shadow-lg transition flex items-center gap-2"
+          :disabled="guardando"
+          class="px-8 py-3 bg-[#9E5A78] hover:bg-[#864662] text-white font-bold text-xs rounded-xl shadow-md hover:shadow-lg transition flex items-center gap-2 disabled:opacity-50 cursor-pointer"
         >
-          <i class="bi bi-floppy-fill"></i>
-          <span>Guardar Cambios de Perfil</span>
+          <i v-if="guardando" class="bi bi-arrow-repeat animate-spin"></i>
+          <i v-else-if="guardadoExitoso" class="bi bi-check-lg text-sm"></i>
+          <i v-else class="bi bi-floppy-fill"></i>
+          <span>{{ guardando ? 'Guardando...' : guardadoExitoso ? '¡Guardado!' : 'Guardar Cambios de Perfil' }}</span>
         </button>
       </div>
     </form>
   </div>
 </template>
+

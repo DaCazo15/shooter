@@ -1,23 +1,39 @@
 <script setup>
-import { onMounted, ref } from 'vue'
+import { onMounted, ref, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import { useCmdStore } from '../../../stores/cmdStore'
 import { useAuthStore } from '../../../stores/authStore'
 import CmdWebSections from './CmdWebSections.vue'
 import CmdFooterSettings from './CmdFooterSettings.vue'
 import CmdLinktreeSettings from './CmdLinktreeSettings.vue'
+import CmdLegalSettings from './CmdLegalSettings.vue'
 
+const route = useRoute()
 const cmdStore = useCmdStore()
 const authStore = useAuthStore()
 
-const pestanaActiva = ref('editor') // 'editor' | 'footer' | 'linktree'
+const pestanaActiva = ref('editor') // 'editor' | 'footer' | 'linktree' | 'legal'
 const guardadoExitoso = ref(false)
 
+const sincronizarPestanaDesdeRuta = () => {
+  if (route.query?.tab && ['editor', 'footer', 'linktree', 'legal'].includes(route.query.tab)) {
+    pestanaActiva.value = route.query.tab
+  }
+}
+
 onMounted(() => {
-  cmdStore.cargarDeFirestore(authStore.user.uid)
+  const uid = authStore.user?.uid || 'demo-user-1'
+  cmdStore.cargarDeFirestore(uid)
+  sincronizarPestanaDesdeRuta()
+})
+
+watch(() => route.query?.tab, () => {
+  sincronizarPestanaDesdeRuta()
 })
 
 const handleGuardar = async () => {
-  const ok = await cmdStore.guardarEnFirestore(authStore.user.uid)
+  const uid = authStore.user?.uid || 'demo-user-1'
+  const ok = await cmdStore.guardarEnFirestore(uid)
   if (ok) {
     guardadoExitoso.value = true
     setTimeout(() => {
@@ -36,13 +52,9 @@ const handleGuardar = async () => {
           <span class="px-2.5 py-0.5 rounded-md bg-[#F7EFE9] text-[#9E5A78] text-[11px] font-bold uppercase tracking-wider">
             CMD Builder & CMS
           </span>
-          <span class="text-xs text-gray-400">|</span>
-          <span class="text-xs text-emerald-700 font-semibold flex items-center gap-1">
-            <i class="bi bi-broadcast"></i> En vivo
-          </span>
         </div>
-        <h1 class="text-2xl font-bold font-serif-title text-[#1F1824] mt-1">Constructor de Sitio Web & Linktree</h1>
-        <p class="text-xs text-gray-500">Personaliza los textos, imágenes, enlaces y secciones de tu vitrina pública y de tu perfil Linktree</p>
+        <h1 class="text-2xl font-bold font-serif-title text-[#1F1824] mt-1">Constructor de Sitio Web & CMS</h1>
+        <p class="text-xs text-gray-500">Personaliza tu web, Linktree, footer y políticas legales, todo en un solo lugar.</p>
       </div>
 
       <div class="flex items-center gap-3">
@@ -96,10 +108,18 @@ const handleGuardar = async () => {
       >
         <i class="bi bi-diagram-2"></i> Perfil Linktree
       </button>
+
+      <button
+        @click="pestanaActiva = 'legal'"
+        class="px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2"
+        :class="pestanaActiva === 'legal' ? 'bg-[#1F1824] text-white shadow-sm' : 'bg-white text-gray-600 hover:bg-[#F7EFE9]'"
+      >
+        <i class="bi bi-shield-check"></i> Términos & Legal
+      </button>
     </div>
 
-    <!-- Ajustes Globales de Subdominio y Tienda -->
-    <div class="bg-white p-5 rounded-2xl border border-[#EADBDE] shadow-xs grid grid-cols-1 sm:grid-cols-2 gap-4">
+    <!-- Ajustes Globales de Subdominio y Tienda (visibles en las pestañas web/footer/linktree) -->
+    <div v-if="pestanaActiva !== 'legal'" class="bg-white p-5 rounded-2xl border border-[#EADBDE] shadow-xs grid grid-cols-1 sm:grid-cols-2 gap-4">
       <div>
         <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">Nombre / Título de la Tienda</label>
         <input
@@ -134,5 +154,8 @@ const handleGuardar = async () => {
 
     <!-- 3. PESTAÑA: LINKTREE -->
     <CmdLinktreeSettings v-if="pestanaActiva === 'linktree'" />
+
+    <!-- 4. PESTAÑA: TÉRMINOS & LEGAL -->
+    <CmdLegalSettings v-if="pestanaActiva === 'legal'" />
   </div>
 </template>

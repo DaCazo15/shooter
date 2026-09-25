@@ -83,7 +83,7 @@ const router = createRouter({
         {
           path: 'configuracion',
           name: 'dashboard-configuracion',
-          component: () => import('../views/dashboard/SettingsLegalView.vue'),
+          component: () => import('../components/section/section-configuracion/ConfiguracionComponent.vue'),
           meta: { requiresAuth: true }
         }
       ]
