@@ -45,17 +45,25 @@ const cerrarModal = () => {
 }
 
 const handleGuardar = async (datos) => {
-  if (productoSeleccionado.value) {
-    await actualizarProducto(productoSeleccionado.value.id, datos)
-  } else {
-    await agregarProducto(datos)
+  try {
+    if (productoSeleccionado.value) {
+      await actualizarProducto(productoSeleccionado.value.id, datos)
+    } else {
+      await agregarProducto(datos)
+    }
+    cerrarModal()
+  } catch (err) {
+    alert('No se pudo guardar el producto en el servidor: ' + (err.message || 'Error de conexión o permisos'))
   }
-  cerrarModal()
 }
 
 const handleEliminar = async (id) => {
   if (confirm('¿Estás segura de eliminar este producto del catálogo?')) {
-    await eliminarProducto(id)
+    try {
+      await eliminarProducto(id)
+    } catch (err) {
+      alert('No se pudo eliminar el producto del servidor: ' + (err.message || 'Error de conexión o permisos'))
+    }
   }
 }
 

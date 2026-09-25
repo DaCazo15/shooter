@@ -12,6 +12,7 @@ import {
   orderBy 
 } from 'firebase/firestore'
 import { useAuthStore } from '../stores/authStore'
+import { resolverUid } from '../utils/resolverUid'
 
 /**
  * Composable para la gestión de clientes del negocio.
@@ -20,17 +21,13 @@ import { useAuthStore } from '../stores/authStore'
 export function useClientes(initialUid = null) {
   const clientes = ref([])
   const cargando = ref(false)
+  const errorGuardado = ref(null)
   const clienteSeleccionado = ref(null)
   const esModalAbierta = ref(false)
   let listenerUnsubscribe = null
 
-  // Resolver UID efectivo del negocio
-  const getUid = (customUid = null) => {
-    if (customUid) return customUid
-    if (initialUid) return initialUid
-    const authStore = useAuthStore()
-    return authStore.user?.uid || auth?.currentUser?.uid || 'demo-user-1'
-  }
+  // Resolver UID efectivo del negocio (demo solo si VITE_DEMO_MODE=true)
+  const getUid = (customUid = null) => resolverUid(customUid, initialUid)
 
   // Obtener clientes en tiempo real aislados por negocio
   const obtenerClientes = (customUid = null) => {
@@ -76,19 +73,20 @@ export function useClientes(initialUid = null) {
 
   // Guardar cliente (Crear o Actualizar)
   const guardarCliente = async (datos, customUid = null) => {
+    errorGuardado.value = null
     cargando.value = true
     const uid = getUid(customUid)
 
-    try {
-      const payload = {
-        nombre: datos.nombre,
-        apellido: datos.apellido || '',
-        telefono: datos.telefono,
-        correo: datos.correo || '',
-        direccion: datos.direccion || '',
-        cantidadPedidos: Number(datos.cantidadPedidos) || 0,
-      }
+    const payload = {
+      nombre: datos.nombre,
+      apellido: datos.apellido || '',
+      telefono: datos.telefono,
+      correo: datos.correo || '',
+      direccion: datos.direccion || '',
+      cantidadPedidos: Number(datos.cantidadPedidos) || 0,
+    }
 
+    try {
       if (db) {
         if (clienteSeleccionado.value?.id && !clienteSeleccionado.value.id.startsWith('local_')) {
           const clienteDoc = doc(db, 'negocios', uid, 'clientes', clienteSeleccionado.value.id)
@@ -115,14 +113,9 @@ export function useClientes(initialUid = null) {
 
       cerrarModal()
     } catch (error) {
-      console.warn('Error al guardar cliente en Firestore, guardando local:', error)
-      if (clienteSeleccionado.value?.id) {
-        const idx = clientes.value.findIndex(c => c.id === clienteSeleccionado.value.id)
-        if (idx !== -1) clientes.value[idx] = { ...clienteSeleccionado.value, ...datos }
-      } else {
-        clientes.value.unshift({ id: `local_${Date.now()}`, ...datos })
-      }
-      cerrarModal()
+      console.error('Error al guardar cliente en Firestore:', error)
+      errorGuardado.value = error.message || 'Error al guardar el cliente en el servidor'
+      throw error
     } finally {
       cargando.value = false
     }
@@ -132,6 +125,7 @@ export function useClientes(initialUid = null) {
   const eliminarCliente = async (id, customUid = null) => {
     if (!confirm('¿Estás seguro de que deseas eliminar este cliente?')) return
 
+    errorGuardado.value = null
     cargando.value = true
     const uid = getUid(customUid)
 
@@ -139,11 +133,13 @@ export function useClientes(initialUid = null) {
       if (db && !id.startsWith('local_')) {
         await deleteDoc(doc(db, 'negocios', uid, 'clientes', id))
       } else {
+        // Modo demo local
         clientes.value = clientes.value.filter(c => c.id !== id)
       }
     } catch (error) {
-      console.warn('Error al eliminar cliente de Firestore:', error)
-      clientes.value = clientes.value.filter(c => c.id !== id)
+      console.error('Error al eliminar cliente de Firestore:', error)
+      errorGuardado.value = error.message || 'Error al eliminar el cliente en el servidor'
+      throw error
     } finally {
       cargando.value = false
     }
@@ -182,6 +178,7 @@ export function useClientes(initialUid = null) {
   return {
     clientes,
     cargando,
+    errorGuardado,
     esModalAbierta,
     clienteSeleccionado,
     abrirModalCrear,

@@ -32,9 +32,11 @@ const abrirLinktree = () => {
       <div class="flex items-center justify-between h-16">
         <!-- Logo & Branding -->
         <router-link to="/dashboard/calculadora" class="flex items-center gap-3 group">
-          <div class="w-10 h-10 rounded-xl bg-linear-to-tr from-[#9E5A78] to-[#D99FB4] flex items-center justify-center text-white text-lg shadow-md group-hover:scale-105 transition transform">
-            <i class="bi bi-bag-heart-fill"></i>
-          </div>
+          <img
+            src="/logo.png"
+            alt="Pandibuy Logo"
+            class="w-10 h-10 object-contain rounded-xl shadow-md group-hover:scale-105 transition transform"
+          />
           <div>
             <span class="font-serif-title text-xl font-bold tracking-tight text-[#FAF8F6] block leading-none">
               Pandibuy

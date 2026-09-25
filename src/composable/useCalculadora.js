@@ -23,6 +23,7 @@ export function useCalculadora() {
   const historial = ref([])
   const cargando = ref(false)
   const guardando = ref(false)
+  const errorGuardado = ref(null)
 
   const agregarItem = () => {
     items.value.push({
@@ -89,8 +90,6 @@ export function useCalculadora() {
     const costo = costoTotalUnitario.value
     const margen = parseFloat(margenGanancia.value) || 0
     if (margen >= 100) return costo * 2
-    // Fórmula de margen sobre venta: Costo / (1 - (Margen / 100))
-    // O markup: Costo * (1 + (Margen / 100))
     return costo * (1 + (margen / 100))
   })
 
@@ -116,6 +115,7 @@ export function useCalculadora() {
     if (!nombreProyecto.value) {
       nombreProyecto.value = 'Presupuesto ' + new Date().toLocaleDateString()
     }
+    errorGuardado.value = null
     guardando.value = true
 
     const calculoDoc = {
@@ -146,15 +146,17 @@ export function useCalculadora() {
       if (db) {
         await addDoc(collection(db, 'calculos'), {
           ...calculoDoc,
-          fechaServidor: serverTimestamp()
+          fechaServidor: serverTimestamp ? serverTimestamp() : new Date().toISOString()
         })
+      } else {
+        // Modo demo local
+        historial.value.unshift({ id: Date.now(), ...calculoDoc })
       }
-      historial.value.unshift({ id: Date.now(), ...calculoDoc })
       return true
     } catch (e) {
-      console.warn('Guardado offline en historial local:', e)
-      historial.value.unshift({ id: Date.now(), ...calculoDoc })
-      return true
+      console.error('Error al guardar cálculo en Firestore:', e)
+      errorGuardado.value = e.message || 'Error al guardar el cálculo en el servidor'
+      throw e
     } finally {
       guardando.value = false
     }
@@ -186,6 +188,7 @@ export function useCalculadora() {
     historial,
     cargando,
     guardando,
+    errorGuardado,
     costoMaterialesUnitario,
     costoManoObraUnitario,
     costoIndirectoUnitario,

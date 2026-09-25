@@ -12,19 +12,16 @@ import {
   serverTimestamp
 } from 'firebase/firestore'
 import { useAuthStore } from '../stores/authStore'
+import { resolverUid } from '../utils/resolverUid'
 
 export function useCatalogo(initialUid = null) {
   const catalogo = ref([])
   const cargando = ref(false)
+  const errorGuardado = ref(null)
   let listenerUnsubscribe = null
 
-  // Resolver UID efectivo del negocio
-  const getUid = (customUid = null) => {
-    if (customUid) return customUid
-    if (initialUid) return initialUid
-    const authStore = useAuthStore()
-    return authStore.user?.uid || auth?.currentUser?.uid || 'demo-user-1'
-  }
+  // Resolver UID efectivo del negocio (demo solo si VITE_DEMO_MODE=true)
+  const getUid = (customUid = null) => resolverUid(customUid, initialUid)
 
   // Cargar catálogo en tiempo real aislado por subcolección: negocios/{uid}/catalogo
   const iniciarEscuchaCatalogo = (customUid = null) => {
@@ -83,6 +80,7 @@ export function useCatalogo(initialUid = null) {
 
   // Agregar producto a negocios/{uid}/catalogo
   const agregarProducto = async (producto, customUid = null) => {
+    errorGuardado.value = null
     const uid = getUid(customUid)
     const payload = {
       titulo: producto.titulo || 'Sin Título',
@@ -96,18 +94,18 @@ export function useCatalogo(initialUid = null) {
       fechaCreacion: serverTimestamp ? serverTimestamp() : new Date().toISOString()
     }
 
-    try {
-      if (db) {
+    if (db) {
+      try {
         const subcolRef = collection(db, 'negocios', uid, 'catalogo')
         const docRef = await addDoc(subcolRef, payload)
         return { id: docRef.id, ...payload }
-      } else {
-        const localItem = { id: `local_${Date.now()}`, ...payload }
-        catalogo.value.unshift(localItem)
-        return localItem
+      } catch (e) {
+        console.error('Error guardando producto en Firestore:', e)
+        errorGuardado.value = e.message || 'Error al guardar el producto en el servidor'
+        throw e
       }
-    } catch (e) {
-      console.warn('Guardado en Firestore no disponible, guardando localmente en modo demo:', e)
+    } else {
+      // Modo demo (db no inicializado)
       const localItem = { id: `local_${Date.now()}`, ...payload }
       catalogo.value.unshift(localItem)
       return localItem
@@ -116,6 +114,7 @@ export function useCatalogo(initialUid = null) {
 
   // Actualizar producto en negocios/{uid}/catalogo/{id}
   const actualizarProducto = async (id, datosActualizados, customUid = null) => {
+    errorGuardado.value = null
     const uid = getUid(customUid)
     const payload = {
       ...datosActualizados,
@@ -124,18 +123,17 @@ export function useCatalogo(initialUid = null) {
       stock: parseInt(datosActualizados.stock, 10) || 0
     }
 
-    try {
-      if (db && !id.startsWith('local_')) {
+    if (db && !id.startsWith('local_')) {
+      try {
         const docRef = doc(db, 'negocios', uid, 'catalogo', id)
         await updateDoc(docRef, payload)
-      } else {
-        const idx = catalogo.value.findIndex(p => p.id === id)
-        if (idx !== -1) {
-          catalogo.value[idx] = { ...catalogo.value[idx], ...payload }
-        }
+      } catch (e) {
+        console.error('Error actualizando producto en Firestore:', e)
+        errorGuardado.value = e.message || 'Error al actualizar el producto en el servidor'
+        throw e
       }
-    } catch (e) {
-      console.warn('Error actualizando producto en Firestore:', e)
+    } else {
+      // Modo demo (db no inicializado o registro local)
       const idx = catalogo.value.findIndex(p => p.id === id)
       if (idx !== -1) {
         catalogo.value[idx] = { ...catalogo.value[idx], ...payload }
@@ -145,16 +143,19 @@ export function useCatalogo(initialUid = null) {
 
   // Eliminar producto de negocios/{uid}/catalogo/{id}
   const eliminarProducto = async (id, customUid = null) => {
+    errorGuardado.value = null
     const uid = getUid(customUid)
-    try {
-      if (db && !id.startsWith('local_')) {
+    if (db && !id.startsWith('local_')) {
+      try {
         const docRef = doc(db, 'negocios', uid, 'catalogo', id)
         await deleteDoc(docRef)
-      } else {
-        catalogo.value = catalogo.value.filter(p => p.id !== id)
+      } catch (e) {
+        console.error('Error eliminando producto de Firestore:', e)
+        errorGuardado.value = e.message || 'Error al eliminar el producto en el servidor'
+        throw e
       }
-    } catch (e) {
-      console.warn('Error eliminando producto de Firestore:', e)
+    } else {
+      // Modo demo (db no inicializado o registro local)
       catalogo.value = catalogo.value.filter(p => p.id !== id)
     }
   }
@@ -195,6 +196,7 @@ export function useCatalogo(initialUid = null) {
   return {
     catalogo,
     cargando,
+    errorGuardado,
     metricasCatalogo,
     iniciarEscuchaCatalogo,
     detenerEscucha,

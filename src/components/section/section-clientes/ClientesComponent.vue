@@ -14,6 +14,22 @@ const {
   eliminarCliente,
   abrirWhatsApp
 } = useClientes()
+
+const handleGuardarCliente = async (datos) => {
+  try {
+    await guardarCliente(datos)
+  } catch (err) {
+    alert('No se pudo guardar el cliente en el servidor: ' + (err.message || 'Error de conexión'))
+  }
+}
+
+const handleEliminarCliente = async (id) => {
+  try {
+    await eliminarCliente(id)
+  } catch (err) {
+    alert('No se pudo eliminar el cliente del servidor: ' + (err.message || 'Error de conexión'))
+  }
+}
 </script>
 
 <template>
@@ -103,7 +119,7 @@ const {
                   </button>
                   <button
                     type="button"
-                    @click="eliminarCliente(cliente.id)"
+                    @click="handleEliminarCliente(cliente.id)"
                     class="p-2 text-red-400 hover:bg-red-50 rounded-lg transition"
                     title="Eliminar cliente"
                   >
@@ -123,7 +139,7 @@ const {
       :cliente="clienteSeleccionado"
       :cargando="cargando"
       @cerrar="cerrarModal"
-      @guardar="guardarCliente"
+      @guardar="handleGuardarCliente"
     />
   </div>
 </template>

@@ -16,9 +16,11 @@ import PublicWhatsAppFloat from '../../components/public/PublicWhatsAppFloat.vue
 const route = useRoute()
 const cmdStore = useCmdStore()
 
+const DEMO_MODE = import.meta.env.VITE_DEMO_MODE === 'true'
+
 // UID del negocio dueño de la tienda
 const ownerUid = computed(() => {
-  return cmdStore.ownerUid || route.params.subdominio || getHostnameSubdomain() || 'demo-user-1'
+  return cmdStore.ownerUid || route.params.subdominio || getHostnameSubdomain() || (DEMO_MODE ? 'demo-user-1' : '')
 })
 
 // Carga de configuración por subdominio o parámetro de ruta

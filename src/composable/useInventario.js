@@ -10,6 +10,7 @@ import {
   serverTimestamp
 } from 'firebase/firestore'
 import { useAuthStore } from '../stores/authStore'
+import { resolverUid } from '../utils/resolverUid'
 
 /**
  * Composable para la gestión de inventario de materiales/insumos.
@@ -18,17 +19,13 @@ import { useAuthStore } from '../stores/authStore'
 export function useInventario(initialUid = null) {
   const materiales = ref([])
   const cargando = ref(false)
+  const errorGuardado = ref(null)
   const modalAbierto = ref(false)
   const materialEditar = ref(null)
   let listenerUnsubscribe = null
 
-  // Resolver UID efectivo del negocio
-  const getUid = (customUid = null) => {
-    if (customUid) return customUid
-    if (initialUid) return initialUid
-    const authStore = useAuthStore()
-    return authStore.user?.uid || auth?.currentUser?.uid || 'demo-user-1'
-  }
+  // Resolver UID efectivo del negocio (demo solo si VITE_DEMO_MODE=true)
+  const getUid = (customUid = null) => resolverUid(customUid, initialUid)
 
   const obtenerMateriales = (customUid = null) => {
     if (listenerUnsubscribe) {
@@ -78,6 +75,7 @@ export function useInventario(initialUid = null) {
   }
 
   const guardarMaterial = async (datos, customUid = null) => {
+    errorGuardado.value = null
     cargando.value = true
     const uid = getUid(customUid)
 
@@ -108,7 +106,7 @@ export function useInventario(initialUid = null) {
           })
         }
       } else {
-        // Modo demo local
+        // Modo demo local (db no disponible)
         if (materialEditar.value?.id) {
           const idx = materiales.value.findIndex(m => m.id === materialEditar.value.id)
           if (idx !== -1) materiales.value[idx] = { ...materialEditar.value, ...payload }
@@ -118,14 +116,9 @@ export function useInventario(initialUid = null) {
       }
       cerrarModal()
     } catch (error) {
-      console.warn('Error al guardar material en Firestore, guardando en modo local:', error)
-      if (materialEditar.value?.id) {
-        const idx = materiales.value.findIndex(m => m.id === materialEditar.value.id)
-        if (idx !== -1) materiales.value[idx] = { ...materialEditar.value, ...payload }
-      } else {
-        materiales.value.unshift({ id: `local_${Date.now()}`, ...payload })
-      }
-      cerrarModal()
+      console.error('Error al guardar material en Firestore:', error)
+      errorGuardado.value = error.message || 'Error al guardar el material en el servidor'
+      throw error
     } finally {
       cargando.value = false
     }
@@ -134,6 +127,7 @@ export function useInventario(initialUid = null) {
   const eliminarMaterial = async (id, customUid = null) => {
     if (!confirm('¿Estás seguro de eliminar este material del inventario?')) return
 
+    errorGuardado.value = null
     cargando.value = true
     const uid = getUid(customUid)
 
@@ -142,11 +136,13 @@ export function useInventario(initialUid = null) {
         const docRef = doc(db, 'negocios', uid, 'inventario', id)
         await deleteDoc(docRef)
       } else {
+        // Modo demo local
         materiales.value = materiales.value.filter(m => m.id !== id)
       }
     } catch (error) {
-      console.warn('Error al eliminar material de Firestore:', error)
-      materiales.value = materiales.value.filter(m => m.id !== id)
+      console.error('Error al eliminar material de Firestore:', error)
+      errorGuardado.value = error.message || 'Error al eliminar el material en el servidor'
+      throw error
     } finally {
       cargando.value = false
     }
@@ -155,6 +151,7 @@ export function useInventario(initialUid = null) {
   return {
     materiales,
     cargando,
+    errorGuardado,
     modalAbierto,
     materialEditar,
     obtenerMateriales,

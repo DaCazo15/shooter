@@ -3,6 +3,7 @@ import { onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useCmdStore } from '../../../stores/cmdStore'
 import { useAuthStore } from '../../../stores/authStore'
+import { resolverUid } from '../../../utils/resolverUid'
 import CmdWebSections from './CmdWebSections.vue'
 import CmdFooterSettings from './CmdFooterSettings.vue'
 import CmdLinktreeSettings from './CmdLinktreeSettings.vue'
@@ -22,7 +23,7 @@ const sincronizarPestanaDesdeRuta = () => {
 }
 
 onMounted(() => {
-  const uid = authStore.user?.uid || 'demo-user-1'
+  const uid = resolverUid(authStore.user?.uid)
   cmdStore.cargarDeFirestore(uid)
   sincronizarPestanaDesdeRuta()
 })
@@ -32,7 +33,7 @@ watch(() => route.query?.tab, () => {
 })
 
 const handleGuardar = async () => {
-  const uid = authStore.user?.uid || 'demo-user-1'
+  const uid = resolverUid(authStore.user?.uid)
   const ok = await cmdStore.guardarEnFirestore(uid)
   if (ok) {
     guardadoExitoso.value = true

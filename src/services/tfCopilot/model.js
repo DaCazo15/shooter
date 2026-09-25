@@ -53,7 +53,7 @@ function softmax(logits) {
 class CopilotNeuralEngine {
   constructor() {
     this.vocabulario = []
-    this.intentsList = Object.values(INTENTS)
+    this.intentsList = Array.from(new Set(Object.values(INTENTS)))
     this.intentWeights = {} // Pesos entrenados por cada neurona de intención
     this.isTrained = false
   }
@@ -166,31 +166,32 @@ class CopilotNeuralEngine {
       for (let i = 0; i < inputVec.length; i++) {
         score += inputVec[i] * weights[i]
       }
-      return score * 4 // Temperatura de escala
+      return score * 10 // Temperatura de escala calibrada
     })
 
     const probabilities = softmax(logits)
 
-    let maxIndex = 0
-    let maxProb = probabilities[0]
+    // Obtener las dos mejores probabilidades para evaluar el margen de certeza
+    const sorted = probabilities
+      .map((prob, idx) => ({ prob, intent: this.intentsList[idx] }))
+      .sort((a, b) => b.prob - a.prob)
 
-    for (let i = 1; i < probabilities.length; i++) {
-      if (probabilities[i] > maxProb) {
-        maxProb = probabilities[i]
-        maxIndex = i
-      }
-    }
+    const top1 = sorted[0]
+    const top2 = sorted[1]
 
-    if (maxProb < 0.25) {
+    // Margen relativo: solo cae a CONSULTA_GENERAL si la distancia entre la primera
+    // y segunda clase más probables es menor a 0.05 (ambigüedad alta)
+    const MARGEN_CERTEZA = 0.05
+    if (top1.prob - (top2?.prob || 0) < MARGEN_CERTEZA) {
       return {
         intent: INTENTS.CONSULTA_GENERAL,
-        confidence: maxProb
+        confidence: top1.prob
       }
     }
 
     return {
-      intent: this.intentsList[maxIndex],
-      confidence: maxProb
+      intent: top1.intent,
+      confidence: top1.prob
     }
   }
 }

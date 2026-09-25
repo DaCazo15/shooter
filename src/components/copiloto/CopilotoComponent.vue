@@ -86,9 +86,9 @@ const formatearMarkdown = (texto = '') => {
         class="group relative flex items-center gap-3 px-4 py-3 bg-[#1F1824] hover:bg-[#2A2131] text-[#FAF8F6] rounded-full shadow-2xl hover:shadow-[#9E5A78]/20 transition-all duration-300 transform hover:scale-[1.03] border border-[#3E3147]/80"
         title="Abrir Pandi Copilot IA"
       >
-        <!-- Icono de Chispa / Sparkle Estilo Gemini -->
-        <div class="w-8 h-8 rounded-full bg-linear-to-tr from-[#9E5A78] via-[#C07E9B] to-[#FAF8F6] flex items-center justify-center text-white text-sm shadow-md group-hover:rotate-12 transition duration-300">
-          <i class="bi bi-stars"></i>
+        <!-- Icono / Logo Pandi Copilot -->
+        <div class="w-8 h-8 rounded-full bg-[#FAF8F6] p-0.5 flex items-center justify-center shadow-md group-hover:rotate-12 transition duration-300 shrink-0">
+          <img src="/logo.png" alt="Pandi Logo" class="w-full h-full object-contain" />
         </div>
 
         <div class="text-left pr-1 hidden sm:block">
@@ -119,8 +119,8 @@ const formatearMarkdown = (texto = '') => {
         <!-- Encabezado Minimalista Estilo Claude -->
         <div class="px-5 py-3.5 bg-white/90 backdrop-blur-md border-b border-[#EADBDE] flex items-center justify-between shrink-0">
           <div class="flex items-center gap-3">
-            <div class="w-9 h-9 rounded-xl bg-linear-to-tr from-[#9E5A78] to-[#D99FB4] flex items-center justify-center text-white text-base shadow-sm">
-              <i class="bi bi-stars"></i>
+            <div class="w-9 h-9 rounded-xl bg-[#FAF8F6] border border-[#EADBDE] p-1 flex items-center justify-center shadow-xs">
+              <img src="/logo.png" alt="Pandi Logo" class="w-full h-full object-contain" />
             </div>
             <div>
               <div class="flex items-center gap-2">
@@ -183,8 +183,8 @@ const formatearMarkdown = (texto = '') => {
 
             <!-- 2. Mensaje del Asistente (Flujo limpio a la izquierda estilo Claude/Gemini) -->
             <div v-else class="flex items-start gap-3 max-w-[95%]">
-              <div class="w-7 h-7 rounded-lg bg-[#FAF8F6] border border-[#EADBDE] text-[#9E5A78] flex items-center justify-center text-xs shrink-0 mt-0.5 shadow-xs">
-                <i class="bi bi-stars"></i>
+              <div class="w-7 h-7 rounded-lg bg-[#FAF8F6] border border-[#EADBDE] p-0.5 flex items-center justify-center shrink-0 mt-0.5 shadow-xs">
+                <img src="/logo.png" alt="Pandi" class="w-full h-full object-contain" />
               </div>
 
               <div class="space-y-2 flex-1">

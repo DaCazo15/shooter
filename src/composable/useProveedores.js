@@ -10,21 +10,18 @@ import {
   serverTimestamp 
 } from 'firebase/firestore'
 import { useAuthStore } from '../stores/authStore'
+import { resolverUid } from '../utils/resolverUid'
 
 export function useProveedores(initialUid = null) {
   const proveedores = ref([])
   const cargando = ref(false)
+  const errorGuardado = ref(null)
   const modalAbierto = ref(false)
   const proveedorEditar = ref(null)
   let listenerUnsubscribe = null
 
-  // Resolver UID efectivo del negocio
-  const getUid = (customUid = null) => {
-    if (customUid) return customUid
-    if (initialUid) return initialUid
-    const authStore = useAuthStore()
-    return authStore.user?.uid || auth?.currentUser?.uid || 'demo-user-1'
-  }
+  // Resolver UID efectivo del negocio (demo solo si VITE_DEMO_MODE=true)
+  const getUid = (customUid = null) => resolverUid(customUid, initialUid)
 
   // Escuchar cambios en tiempo real
   const obtenerProveedores = (customUid = null) => {
@@ -76,6 +73,7 @@ export function useProveedores(initialUid = null) {
 
   // Guardar (Crear o Actualizar)
   const guardarProveedor = async (datos, customUid = null) => {
+    errorGuardado.value = null
     cargando.value = true
     const uid = getUid(customUid)
 
@@ -115,14 +113,9 @@ export function useProveedores(initialUid = null) {
       }
       cerrarModal()
     } catch (error) {
-      console.warn('Error al guardar proveedor en Firestore, guardando local:', error)
-      if (proveedorEditar.value?.id) {
-        const idx = proveedores.value.findIndex(p => p.id === proveedorEditar.value.id)
-        if (idx !== -1) proveedores.value[idx] = { ...proveedorEditar.value, ...payload }
-      } else {
-        proveedores.value.unshift({ id: `local_${Date.now()}`, ...payload })
-      }
-      cerrarModal()
+      console.error('Error al guardar proveedor en Firestore:', error)
+      errorGuardado.value = error.message || 'Error al guardar el proveedor en el servidor'
+      throw error
     } finally {
       cargando.value = false
     }
@@ -132,6 +125,7 @@ export function useProveedores(initialUid = null) {
   const eliminarProveedor = async (id, customUid = null) => {
     if (!confirm('¿Estás seguro de eliminar este proveedor?')) return
 
+    errorGuardado.value = null
     cargando.value = true
     const uid = getUid(customUid)
 
@@ -140,11 +134,13 @@ export function useProveedores(initialUid = null) {
         const docRef = doc(db, 'negocios', uid, 'proveedores', id)
         await deleteDoc(docRef)
       } else {
+        // Demo local
         proveedores.value = proveedores.value.filter(p => p.id !== id)
       }
     } catch (error) {
-      console.warn('Error al eliminar proveedor de Firestore:', error)
-      proveedores.value = proveedores.value.filter(p => p.id !== id)
+      console.error('Error al eliminar proveedor de Firestore:', error)
+      errorGuardado.value = error.message || 'Error al eliminar el proveedor en el servidor'
+      throw error
     } finally {
       cargando.value = false
     }
@@ -160,6 +156,7 @@ export function useProveedores(initialUid = null) {
   return {
     proveedores,
     cargando,
+    errorGuardado,
     modalAbierto,
     proveedorEditar,
     obtenerProveedores,

@@ -10,9 +10,11 @@ const { contactarWhatsApp } = useWhatsApp()
   <header class="bg-white/80 backdrop-blur-md border-b border-[#EADBDE] sticky top-0 z-30">
     <div class="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
       <div class="flex items-center gap-3">
-        <div class="w-8 h-8 rounded-lg bg-linear-to-tr from-[#9E5A78] to-[#D99FB4] flex items-center justify-center text-white text-base shadow-sm">
-          <i class="bi bi-bag-heart-fill"></i>
-        </div>
+        <img
+          :src="cmdStore.logoUrl || '/logo.png'"
+          alt="Logo"
+          class="w-8 h-8 rounded-lg object-contain shadow-xs"
+        />
         <span class="font-serif-title text-xl font-bold tracking-tight text-[#1F1824]">
           {{ cmdStore.tituloSitio || 'Pandibuy Atelier' }}
         </span>

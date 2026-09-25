@@ -24,7 +24,7 @@ export const DEFAULT_BLOQUES_WEB = [
     activo: true,
     orden: 2,
     contenido: {
-      titulo: 'Piezas artesanales que cuentan historias',
+      titulo: 'Piezas  que cuentan historias',
       subtitulo: 'Diseño exclusivo, acabados de calidad y empaque especial para tus momentos inolvidables.',
       textoBoton: 'Ver Catálogo Exclusivo',
       enlaceBoton: '#catalogo',
@@ -114,25 +114,28 @@ export const DEFAULT_LINKTREE_ENLACES = [
   }
 ]
 
+const DEMO_MODE = import.meta.env.VITE_DEMO_MODE === 'true'
+const DEMO_UID = 'demo-user-1'
+
 export const useCmdStore = defineStore('cmd', () => {
   // Modo de edición ('web' | 'linktree')
   const modoActual = ref('web')
 
   // Identificador del dueño del negocio
-  const ownerUid = ref('demo-user-1')
+  const ownerUid = ref(DEMO_MODE ? DEMO_UID : '')
 
   // Configuración de la Web
   const subdominio = ref('pandibuy')
   const tituloSitio = ref('Pandibuy Atelier')
-  const descripcion = ref('Tienda de creaciones y piezas de diseño artesanal.')
+  const descripcion = ref('Tienda de creaciones y piezas de diseño .')
   const bloquesWeb = ref([...DEFAULT_BLOQUES_WEB])
 
   // Configuración del Linktree
   const linktree = ref({
     titulo: 'Pandibuy Atelier',
     tituloPerfil: 'Pandibuy Atelier',
-    bio: 'Joyería y piezas de diseño artesanal hechas con amor.',
-    biografia: 'Joyería y piezas de diseño artesanal hechas con amor.',
+    bio: 'Joyería y piezas de diseño  hechas con amor.',
+    biografia: 'Joyería y piezas de diseño  hechas con amor.',
     avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80',
     colorFondo: '#1F1824',
     colorBoton: '#9E5A78',
@@ -193,8 +196,13 @@ export const useCmdStore = defineStore('cmd', () => {
   }
 
   // Guardar en Firestore y mantener en Store
-  const guardarEnFirestore = async (userId = 'demo-user-1') => {
-    const validUserId = (userId && typeof userId === 'string' && userId.trim()) ? userId.trim() : 'demo-user-1'
+  const guardarEnFirestore = async (userId = '') => {
+    let validUserId = (userId && typeof userId === 'string' && userId.trim()) ? userId.trim() : ''
+    if (!validUserId && DEMO_MODE) validUserId = DEMO_UID
+    if (!validUserId) {
+      console.error('[cmdStore] No se puede guardar: no hay UID de negocio autenticado. Inicia sesión o activa VITE_DEMO_MODE=true.')
+      return false
+    }
     guardando.value = true
     ownerUid.value = validUserId
     const payload = {
@@ -222,10 +230,15 @@ export const useCmdStore = defineStore('cmd', () => {
   }
 
   // Cargar de Firestore buscando por UID o por subdominio
-  const cargarDeFirestore = async (userIdOrSubdominio = 'demo-user-1') => {
-    const target = (userIdOrSubdominio && typeof userIdOrSubdominio === 'string' && userIdOrSubdominio.trim())
+  const cargarDeFirestore = async (userIdOrSubdominio = '') => {
+    let target = (userIdOrSubdominio && typeof userIdOrSubdominio === 'string' && userIdOrSubdominio.trim())
       ? userIdOrSubdominio.trim()
-      : 'demo-user-1'
+      : ''
+    if (!target && DEMO_MODE) target = DEMO_UID
+    if (!target) {
+      console.warn('[cmdStore] No se puede cargar configuración: no hay UID ni subdominio proporcionado.')
+      return
+    }
 
     cargando.value = true
     try {

@@ -14,8 +14,8 @@ export const BLOQUES_WEB_DEFECTO = [
 export const CONFIG_LINKTREE_DEFECTO = {
   titulo: 'Pandibuy Atelier',
   tituloPerfil: 'Pandibuy Atelier',
-  bio: 'Joyería y piezas de diseño artesanal hechas con amor.',
-  biografia: 'Joyería y piezas de diseño artesanal hechas con amor.',
+  bio: 'Joyería y piezas de diseño  hechas con amor.',
+  biografia: 'Joyería y piezas de diseño  hechas con amor.',
   avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80',
   colorFondo: '#1F1824',
   colorBoton: '#9E5A78',

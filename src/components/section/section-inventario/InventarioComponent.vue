@@ -42,6 +42,38 @@ const {
 let desuscribirInventario = null
 let desuscribirProveedores = null
 
+const handleGuardarMaterial = async (datos) => {
+  try {
+    await guardarMaterial(datos)
+  } catch (err) {
+    alert('No se pudo guardar el material en el servidor: ' + (err.message || 'Error de conexión'))
+  }
+}
+
+const handleEliminarMaterial = async (id) => {
+  try {
+    await eliminarMaterial(id)
+  } catch (err) {
+    alert('No se pudo eliminar el material del servidor: ' + (err.message || 'Error de conexión'))
+  }
+}
+
+const handleGuardarProveedor = async (datos) => {
+  try {
+    await guardarProveedor(datos)
+  } catch (err) {
+    alert('No se pudo guardar el proveedor en el servidor: ' + (err.message || 'Error de conexión'))
+  }
+}
+
+const handleEliminarProveedor = async (id) => {
+  try {
+    await eliminarProveedor(id)
+  } catch (err) {
+    alert('No se pudo eliminar el proveedor del servidor: ' + (err.message || 'Error de conexión'))
+  }
+}
+
 onMounted(() => {
   desuscribirInventario = obtenerMateriales()
   desuscribirProveedores = obtenerProveedores()
@@ -109,7 +141,7 @@ onUnmounted(() => {
       :cargando="cargandoInventario"
       @crear="abrirModalCrearMaterial"
       @editar="abrirModalEditarMaterial"
-      @eliminar="eliminarMaterial"
+      @eliminar="handleEliminarMaterial"
     />
 
     <!-- Vista de Proveedores -->
@@ -120,7 +152,7 @@ onUnmounted(() => {
       :generar-link-whats-app="generarLinkWhatsApp"
       @crear="abrirModalCrearProveedor"
       @editar="abrirModalEditarProveedor"
-      @eliminar="eliminarProveedor"
+      @eliminar="handleEliminarProveedor"
     />
 
     <!-- Modales -->
@@ -130,7 +162,7 @@ onUnmounted(() => {
       :proveedores="proveedores"
       :cargando="cargandoInventario"
       @cerrar="cerrarModalMaterial"
-      @guardar="guardarMaterial"
+      @guardar="handleGuardarMaterial"
     />
 
     <InventarioModal
@@ -138,7 +170,7 @@ onUnmounted(() => {
       :proveedor="proveedorEditar"
       :cargando="cargandoProveedores"
       @cerrar="cerrarModalProveedor"
-      @guardar="guardarProveedor"
+      @guardar="handleGuardarProveedor"
     />
   </div>
 </template>

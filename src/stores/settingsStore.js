@@ -13,7 +13,7 @@ export const useSettingsStore = defineStore('settings', () => {
 3. Tiempos de Entrega: Los plazos de confección oscilan entre 3 y 7 días hábiles según la complejidad del pedido.
 4. Envíos y Responsabilidad: Los envíos se realizan a través de agencias de encomienda aliadas con número de seguimiento garantizado.`,
     politicaDevoluciones: `Políticas de Cambio y Devolución:
-- Debido a la naturaleza artesanal y personalizada de nuestras piezas, no se aceptan devoluciones por cambio de opinión una vez iniciado el proceso.
+- Debido a la naturaleza  y personalizada de nuestras piezas, no se aceptan devoluciones por cambio de opinión una vez iniciado el proceso.
 - En caso de defectos de fábrica o discrepancias en el pedido recibido, el cliente tiene un plazo de 48 horas tras la entrega para notificar el reclamo con soporte fotográfico.
 - Las devoluciones aprobadas serán reemplazadas por una pieza nueva o saldo a favor en la tienda.`,
     politicaPrivacidad: `Protección de Datos:

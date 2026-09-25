@@ -5,16 +5,18 @@ import { useAuthStore } from '../stores/authStore'
 import { useClientes } from './useClientes'
 import { useCatalogo } from './useCatalogo'
 import { useInventario } from './useInventario'
+import { useProveedores } from './useProveedores'
 
 /**
- * Composable para interactuar con Pandi Copilot impulsado por TensorFlow.js.
- * Inferencia 100% en el cliente, consejos artesanales y cláusula obligatoria de segunda opinión.
+ * Composable para interactuar con Pandi Cosado por TensorFlow.js.
+ * Inferencia 100% en el cliente, consejos es y cláusula obligatoria de segunda opinión.
  */
 export function useCopiloto() {
   const authStore = useAuthStore()
   const { clientes, obtenerClientes } = useClientes()
   const { catalogo, iniciarEscuchaCatalogo } = useCatalogo()
   const { materiales, obtenerMateriales } = useInventario()
+  const { proveedores, obtenerProveedores } = useProveedores()
 
   const mensajes = ref([])
   const cargando = ref(false)
@@ -32,6 +34,7 @@ export function useCopiloto() {
       obtenerClientes()
       iniciarEscuchaCatalogo()
       obtenerMateriales()
+      obtenerProveedores()
 
       // Inicializar y pre-entrenar la red neuronal en background
       await neuralCopilot.entrenar()
@@ -63,6 +66,7 @@ export function useCopiloto() {
       if (clientes.value.length === 0) obtenerClientes()
       if (catalogo.value.length === 0) iniciarEscuchaCatalogo()
       if (materiales.value.length === 0) obtenerMateriales()
+      if (proveedores.value.length === 0) obtenerProveedores()
 
       // Simular un pequeño retardo natural de pensamiento (350ms)
       await new Promise(r => setTimeout(r, 350))
@@ -76,7 +80,8 @@ export function useCopiloto() {
         user: authStore.user,
         clientes: clientes.value || [],
         catalogo: catalogo.value || [],
-        materiales: materiales.value || []
+        materiales: materiales.value || [],
+        proveedores: proveedores.value || []
       })
 
       mensajes.value.push({

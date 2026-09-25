@@ -108,7 +108,7 @@ const toggleAcordeon = (id) => {
               <input
                 v-model="bloque.contenido.titulo"
                 type="text"
-                placeholder="Piezas artesanales que cuentan historias"
+                placeholder="Piezas  que cuentan historias"
                 class="w-full px-3 py-2 text-xs bg-white border border-[#EADBDE] rounded-xl focus:ring-2 focus:ring-[#9E5A78] font-bold"
               />
             </div>

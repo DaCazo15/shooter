@@ -52,7 +52,7 @@ onMounted(() => {
   >
     <div class="max-w-3xl mx-auto space-y-6 relative z-10">
       <span class="px-3.5 py-1 rounded-full bg-[#FAF8F6]/15 backdrop-blur-md text-[#D99FB4] text-xs uppercase font-bold tracking-widest border border-[#FAF8F6]/20">
-        Colección Oficial &amp; Confección Artesanal
+        Colección Oficial &amp; Confección 
       </span>
       <h1 class="gsap-hero-title text-3xl sm:text-5xl lg:text-6xl font-serif-title font-bold leading-tight">
         {{ bloque.contenido.titulo }}

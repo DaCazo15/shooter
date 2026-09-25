@@ -28,8 +28,8 @@ const handleLogin = async () => {
     <div class="w-full max-w-md bg-[#FAF8F6] rounded-3xl shadow-2xl overflow-hidden border border-[#EADBDE]/40 relative z-10">
       <!-- Encabezado con estética refinada -->
       <div class="bg-linear-to-r from-[#1F1824] to-[#2D2334] p-8 text-center text-white relative">
-        <div class="w-16 h-16 mx-auto mb-3 bg-[#FAF8F6] rounded-2xl flex items-center justify-center shadow-lg border border-[#EADBDE]">
-          <i class="bi bi-bag-heart-fill text-2xl text-[#9E5A78]"></i>
+        <div class="w-20 h-20 mx-auto mb-3 bg-[#FAF8F6] rounded-2xl p-2 flex items-center justify-center shadow-lg border border-[#EADBDE]">
+          <img src="/logo.png" alt="Pandibuy Logo" class="w-full h-full object-contain" />
         </div>
         <h1 class="text-2xl font-bold tracking-tight font-serif-title text-[#FAF8F6]">
           Pandibuy

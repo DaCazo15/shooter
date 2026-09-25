@@ -10,16 +10,18 @@ export const INTENTS = {
   ESTRATEGIA_MARKETING: 'estrategia_marketing',
   GESTION_TIEMPO: 'gestion_tiempo',
   DATOS_CUENTA_PERFIL: 'datos_cuenta_perfil',
-  METRICAS_CLIENTES: 'metricas_clientes',
   METRICAS_CATALOGO: 'metricas_catalogo',
-  METRICAS_INVENTARIO: 'metricas_inventario',
   SALUDO_AYUDA: 'saludo_ayuda',
   DESPEDIDA_GRACIAS: 'despedida_gracias',
-  CONSULTA_GENERAL: 'consulta_general'
+  CONSULTA_GENERAL: 'consulta_general',
+
+  // Alias de compatibilidad hacia las intenciones unificadas
+  METRICAS_CLIENTES: 'clientes_ventas',
+  METRICAS_INVENTARIO: 'stock_inventario'
 }
 
 export const TRAINING_DATA = [
-  // --- PRECIOS Y MÁRGENES ---
+  // --- PRECIOS Y MÁRGENES (10 ejemplos) ---
   { text: '¿Cómo calculo el precio de mis productos?', intent: INTENTS.PRECIOS_MARGENES },
   { text: '¿Cuánto margen de ganancia debería tener en artesanías?', intent: INTENTS.PRECIOS_MARGENES },
   { text: 'Siento que estoy cobrando muy barato', intent: INTENTS.PRECIOS_MARGENES },
@@ -27,35 +29,62 @@ export const TRAINING_DATA = [
   { text: '¿Debo subir mis precios por la inflación?', intent: INTENTS.PRECIOS_MARGENES },
   { text: 'Calculadora de costos y ganancia neta', intent: INTENTS.PRECIOS_MARGENES },
   { text: '¿Cómo incluyo mi mano de obra y tiempo en el costo?', intent: INTENTS.PRECIOS_MARGENES },
-  { text: 'Los clientes me piden mucho descuento y rebajas', intent: INTENTS.PRECIOS_MARGENES },
+  { text: 'Los clientes me piden mucho descuento y rebajas en precios', intent: INTENTS.PRECIOS_MARGENES },
   { text: '¿Qué porcentaje de ganancia es recomendable?', intent: INTENTS.PRECIOS_MARGENES },
   { text: '¿Cómo cobrar pedidos personalizados sin perder dinero?', intent: INTENTS.PRECIOS_MARGENES },
 
-  // --- STOCK E INVENTARIO ---
+  // --- STOCK E INVENTARIO (Incluye consultas de insumos, materiales y proveedores) ---
   { text: '¿Qué materiales se me están agotando?', intent: INTENTS.STOCK_INVENTARIO },
   { text: 'Tengo insumos con stock crítico o bajo', intent: INTENTS.STOCK_INVENTARIO },
-  { text: '¿Cómo controlo las mermas y desperdicios del taller?', intent: INTENTS.STOCK_INVENTARIO },
+  { text: 'control de mermas y desperdicios de materias primas e insumos', intent: INTENTS.STOCK_INVENTARIO },
   { text: '¿Cuándo debo comprar más materia prima?', intent: INTENTS.STOCK_INVENTARIO },
   { text: 'No sé cuánto inventario tengo disponible', intent: INTENTS.STOCK_INVENTARIO },
-  { text: 'Revisa si me falta material para trabajar', intent: INTENTS.STOCK_INVENTARIO },
-  { text: '¿Cómo organizar los insumos en el taller?', intent: INTENTS.STOCK_INVENTARIO },
+  { text: 'Revisa si me falta stock de material en taller', intent: INTENTS.STOCK_INVENTARIO },
+  { text: 'como organizar los insumos y materiales del inventario', intent: INTENTS.STOCK_INVENTARIO },
   { text: 'Tengo dinero estancado en materiales que no uso', intent: INTENTS.STOCK_INVENTARIO },
   { text: 'Alertas de stock mínimo y reposición', intent: INTENTS.STOCK_INVENTARIO },
   { text: '¿Cuáles insumos tienen mayor rotación?', intent: INTENTS.STOCK_INVENTARIO },
+  { text: '¿Cuántos insumos o materiales tengo en inventario?', intent: INTENTS.STOCK_INVENTARIO },
+  { text: 'resumen del stock del taller', intent: INTENTS.STOCK_INVENTARIO },
+  { text: 'cuál es el valor total de mi inventario de materiales', intent: INTENTS.STOCK_INVENTARIO },
+  { text: 'qué materiales tienen stock bajo o crítico', intent: INTENTS.STOCK_INVENTARIO },
+  { text: 'cuántos insumos tengo registrados', intent: INTENTS.STOCK_INVENTARIO },
+  { text: '¿Cuántos proveedores tengo actualmente?', intent: INTENTS.STOCK_INVENTARIO },
+  { text: 'cuantos proveedores tenemos', intent: INTENTS.STOCK_INVENTARIO },
+  { text: 'cuantos proveedores hay registrados', intent: INTENTS.STOCK_INVENTARIO },
+  { text: 'total de proveedores en el sistema', intent: INTENTS.STOCK_INVENTARIO },
+  { text: 'lista de mis proveedores', intent: INTENTS.STOCK_INVENTARIO },
+  { text: 'quiénes son mis proveedores de materia prima', intent: INTENTS.STOCK_INVENTARIO },
+  { text: 'directorio y contactos de proveedores', intent: INTENTS.STOCK_INVENTARIO },
+  { text: 'proveedores registrados en el taller', intent: INTENTS.STOCK_INVENTARIO },
+  { text: 'cuantos productos tengo en el inventario', intent: INTENTS.STOCK_INVENTARIO },
+  { text: 'cuantos productos o articulos tengo en inventario', intent: INTENTS.STOCK_INVENTARIO },
+  { text: 'total de productos o materiales en inventario', intent: INTENTS.STOCK_INVENTARIO },
 
-  // --- CLIENTES Y VENTAS ---
+  // --- CLIENTES Y VENTAS (Incluye consultas de clientes, ventas y pedidos) ---
   { text: '¿Cómo conseguir más clientes para mi tienda?', intent: INTENTS.CLIENTES_VENTAS },
   { text: 'Un cliente no me quiere pagar el anticipo', intent: INTENTS.CLIENTES_VENTAS },
   { text: '¿Cómo fidelizar a mis compradores frecuentes?', intent: INTENTS.CLIENTES_VENTAS },
-  { text: '¿Qué hacer cuando un cliente hace un reclamo?', intent: INTENTS.CLIENTES_VENTAS },
-  { text: '¿Cómo pedir recomendaciones y reseñas positivas?', intent: INTENTS.CLIENTES_VENTAS },
+  { text: '¿Cómo atender reclamos o quejas de clientes insatisfechos?', intent: INTENTS.CLIENTES_VENTAS },
+  { text: '¿Cómo pedir recomendaciones y reseñas positivas a clientes?', intent: INTENTS.CLIENTES_VENTAS },
   { text: 'Mis ventas han bajado este mes, ¿qué hago?', intent: INTENTS.CLIENTES_VENTAS },
   { text: '¿Cómo cerrar ventas por WhatsApp de forma efectiva?', intent: INTENTS.CLIENTES_VENTAS },
   { text: 'Un comprador dejó el carrito o pedido a medias', intent: INTENTS.CLIENTES_VENTAS },
   { text: '¿Cómo manejar clientes difíciles o indecisos?', intent: INTENTS.CLIENTES_VENTAS },
   { text: '¿Quiénes son mis clientes más valiosos?', intent: INTENTS.CLIENTES_VENTAS },
+  { text: '¿Cuántos clientes tenemos registrados actualmente?', intent: INTENTS.CLIENTES_VENTAS },
+  { text: 'cuantos clientes tenemos', intent: INTENTS.CLIENTES_VENTAS },
+  { text: 'cuantos clientes hay registrados', intent: INTENTS.CLIENTES_VENTAS },
+  { text: 'total de clientes en el sistema', intent: INTENTS.CLIENTES_VENTAS },
+  { text: 'lista de mis clientes', intent: INTENTS.CLIENTES_VENTAS },
+  { text: 'quiénes son mis clientes registrados', intent: INTENTS.CLIENTES_VENTAS },
+  { text: 'cuántos clientes o compradores tengo', intent: INTENTS.CLIENTES_VENTAS },
+  { text: '¿Cuántas ventas tuvimos este mes?', intent: INTENTS.CLIENTES_VENTAS },
+  { text: 'cuantas ventas tuvimos', intent: INTENTS.CLIENTES_VENTAS },
+  { text: 'total de ventas y pedidos registrados', intent: INTENTS.CLIENTES_VENTAS },
+  { text: 'cuantos pedidos hemos concretado', intent: INTENTS.CLIENTES_VENTAS },
 
-  // --- ESTRATEGIA Y MARKETING ---
+  // --- ESTRATEGIA Y MARKETING (22 ejemplos) ---
   { text: '¿Cómo promocionar mis creaciones en Instagram y TikTok?', intent: INTENTS.ESTRATEGIA_MARKETING },
   { text: 'Ideas para fotos y videos de mis productos', intent: INTENTS.ESTRATEGIA_MARKETING },
   { text: '¿Vale la pena hacer promociones o 2x1?', intent: INTENTS.ESTRATEGIA_MARKETING },
@@ -64,16 +93,37 @@ export const TRAINING_DATA = [
   { text: '¿Cómo lanzar una nueva colección exclusiva?', intent: INTENTS.ESTRATEGIA_MARKETING },
   { text: 'Consejos para mejorar mi vitrina web y Linktree', intent: INTENTS.ESTRATEGIA_MARKETING },
   { text: '¿Cómo diferenciarme de la competencia?', intent: INTENTS.ESTRATEGIA_MARKETING },
+  { text: 'como promocionar mi marca en redes', intent: INTENTS.ESTRATEGIA_MARKETING },
+  { text: 'publicidad para mis artesanias y manualidades', intent: INTENTS.ESTRATEGIA_MARKETING },
+  { text: 'estrategias de difusion para mi negocio', intent: INTENTS.ESTRATEGIA_MARKETING },
+  { text: 'consejos para mejorar el packaging y empaque de envios', intent: INTENTS.ESTRATEGIA_MARKETING },
+  { text: 'que publicar en historias y reels para llamar la atencion', intent: INTENTS.ESTRATEGIA_MARKETING },
+  { text: 'como tomar fotos bonitas a mis piezas con el celular', intent: INTENTS.ESTRATEGIA_MARKETING },
+  { text: 'ideas de promociones para fechas especiales y festivos', intent: INTENTS.ESTRATEGIA_MARKETING },
+  { text: 'que me puede decir de mi web y mi linktree', intent: INTENTS.ESTRATEGIA_MARKETING },
+  { text: 'informacion sobre mi pagina web y linktree', intent: INTENTS.ESTRATEGIA_MARKETING },
+  { text: 'como esta mi vitrina web y mi linktree', intent: INTENTS.ESTRATEGIA_MARKETING },
+  { text: 'como mejorar mi sitio web y linktree', intent: INTENTS.ESTRATEGIA_MARKETING },
+  { text: 'donde configuro mi pagina web y linktree', intent: INTENTS.ESTRATEGIA_MARKETING },
+  { text: 'consejos para mi linktree y pagina web', intent: INTENTS.ESTRATEGIA_MARKETING },
+  { text: 'que me recomiendas para mi tienda web', intent: INTENTS.ESTRATEGIA_MARKETING },
 
-  // --- GESTIÓN DE TIEMPO Y TALLER ---
+  // --- GESTIÓN DE TIEMPO Y TALLER (13 ejemplos) ---
   { text: 'Estoy saturado de pedidos y no me da tiempo', intent: INTENTS.GESTION_TIEMPO },
   { text: '¿Cómo calcular el tiempo de elaboración por pieza?', intent: INTENTS.GESTION_TIEMPO },
   { text: 'Me cuesta organizar las entregas a tiempo', intent: INTENTS.GESTION_TIEMPO },
   { text: '¿Debería contratar un ayudante o tercerizar?', intent: INTENTS.GESTION_TIEMPO },
   { text: '¿Cómo equilibrar la producción con la atención al cliente?', intent: INTENTS.GESTION_TIEMPO },
-  { text: 'Tengo retrasos en la producción artesanal', intent: INTENTS.GESTION_TIEMPO },
+  { text: 'Tengo retrasos en la producción ', intent: INTENTS.GESTION_TIEMPO },
+  { text: 'no me alcanza el tiempo para terminar los encargos', intent: INTENTS.GESTION_TIEMPO },
+  { text: 'como organizarme en el taller para entregar puntual', intent: INTENTS.GESTION_TIEMPO },
+  { text: 'metodos para ser mas productivo haciendo piezas', intent: INTENTS.GESTION_TIEMPO },
+  { text: 'mucho desorden y retrasos en las entregas del taller', intent: INTENTS.GESTION_TIEMPO },
+  { text: 'como planificar mi semana de confeccion y armado', intent: INTENTS.GESTION_TIEMPO },
+  { text: 'paso todo el dia trabajando en el taller y no rindo', intent: INTENTS.GESTION_TIEMPO },
+  { text: 'consejos para optimizar las horas de fabricacion', intent: INTENTS.GESTION_TIEMPO },
 
-  // --- DATOS DE CUENTA Y PERFIL DEL NEGOCIO ---
+  // --- DATOS DE CUENTA Y PERFIL DEL NEGOCIO (16 ejemplos) ---
   { text: '¿Cuál es mi número de teléfono?', intent: INTENTS.DATOS_CUENTA_PERFIL },
   { text: 'cuál es el número de teléfono de la cuenta', intent: INTENTS.DATOS_CUENTA_PERFIL },
   { text: 'cual es numero de telefono de lacuenta', intent: INTENTS.DATOS_CUENTA_PERFIL },
@@ -84,46 +134,54 @@ export const TRAINING_DATA = [
   { text: 'mi numero de whatsapp', intent: INTENTS.DATOS_CUENTA_PERFIL },
   { text: 'dime mi whatsapp y teléfono', intent: INTENTS.DATOS_CUENTA_PERFIL },
   { text: '¿Cuál es el correo o email de la cuenta?', intent: INTENTS.DATOS_CUENTA_PERFIL },
-  { text: '¿Cómo se llama mi negocio o tienda?', intent: INTENTS.DATOS_CUENTA_PERFIL },
+  { text: '¿Cómo se llama mi negocio o perfil de tienda?', intent: INTENTS.DATOS_CUENTA_PERFIL },
   { text: 'muéstrame los datos de mi perfil de negocio', intent: INTENTS.DATOS_CUENTA_PERFIL },
-  { text: 'cuál es mi instagram y redes', intent: INTENTS.DATOS_CUENTA_PERFIL },
-  { text: '¿Qué moneda tengo configurada?', intent: INTENTS.DATOS_CUENTA_PERFIL },
-  { text: 'información de mi cuenta', intent: INTENTS.DATOS_CUENTA_PERFIL },
-  { text: 'datos de perfil y usuario', intent: INTENTS.DATOS_CUENTA_PERFIL },
+  { text: 'cuál es mi instagram y redes de mi perfil', intent: INTENTS.DATOS_CUENTA_PERFIL },
+  { text: '¿Qué moneda de cuenta tengo configurada?', intent: INTENTS.DATOS_CUENTA_PERFIL },
+  { text: 'información de mi cuenta y perfil', intent: INTENTS.DATOS_CUENTA_PERFIL },
+  { text: 'datos de perfil y usuario de la cuenta', intent: INTENTS.DATOS_CUENTA_PERFIL },
 
-  // --- MÉTRICAS DE CLIENTES ---
-  { text: '¿Cuántos clientes tenemos registrados actualmente?', intent: INTENTS.METRICAS_CLIENTES },
-  { text: 'cuantos clientes tenemos', intent: INTENTS.METRICAS_CLIENTES },
-  { text: 'cuantos clientes hay registrados', intent: INTENTS.METRICAS_CLIENTES },
-  { text: 'total de clientes en el sistema', intent: INTENTS.METRICAS_CLIENTES },
-  { text: 'lista de mis clientes', intent: INTENTS.METRICAS_CLIENTES },
-  { text: 'quiénes son mis clientes registrados', intent: INTENTS.METRICAS_CLIENTES },
-  { text: 'cuántos compradores tengo', intent: INTENTS.METRICAS_CLIENTES },
-
-  // --- MÉTRICAS DE CATÁLOGO / PRODUCTOS ---
+  // --- MÉTRICAS DE CATÁLOGO / PRODUCTOS (17 ejemplos) ---
   { text: '¿Cuántos productos tengo en el catálogo?', intent: INTENTS.METRICAS_CATALOGO },
-  { text: 'cuántos productos hay publicados', intent: INTENTS.METRICAS_CATALOGO },
+  { text: 'cuántos productos hay publicados en el catálogo', intent: INTENTS.METRICAS_CATALOGO },
   { text: 'total de artículos en el catálogo', intent: INTENTS.METRICAS_CATALOGO },
-  { text: 'qué productos tengo disponibles', intent: INTENTS.METRICAS_CATALOGO },
-  { text: 'resumen de mi catálogo', intent: INTENTS.METRICAS_CATALOGO },
+  { text: 'qué productos tengo disponibles en el catálogo', intent: INTENTS.METRICAS_CATALOGO },
+  { text: 'resumen de mi catálogo de productos', intent: INTENTS.METRICAS_CATALOGO },
+  { text: 'cuantos articulos tengo subidos en catalogo', intent: INTENTS.METRICAS_CATALOGO },
+  { text: 'cuantas piezas hay en el catalogo', intent: INTENTS.METRICAS_CATALOGO },
+  { text: 'muestrame el total de productos cargados', intent: INTENTS.METRICAS_CATALOGO },
+  { text: 'que piezas tengo a la venta en el catalogo', intent: INTENTS.METRICAS_CATALOGO },
+  { text: 'cuantos modelos tengo activos en el catalogo', intent: INTENTS.METRICAS_CATALOGO },
+  { text: 'conteo de productos cargados en catalogo', intent: INTENTS.METRICAS_CATALOGO },
+  { text: 'que es lo mas vendido de mi catalogo', intent: INTENTS.METRICAS_CATALOGO },
+  { text: 'lo mas vendido de mi catalogo', intent: INTENTS.METRICAS_CATALOGO },
+  { text: 'cuales son mis productos destacados en la tienda', intent: INTENTS.METRICAS_CATALOGO },
+  { text: 'articulos estrella o mas populares del catalogo', intent: INTENTS.METRICAS_CATALOGO },
+  { text: 'piezas destacadas en mi catalogo', intent: INTENTS.METRICAS_CATALOGO },
+  { text: 'cuales son mis productos mas caros del catalogo', intent: INTENTS.METRICAS_CATALOGO },
 
-  // --- MÉTRICAS DE INVENTARIO / MATERIALES ---
-  { text: '¿Cuántos insumos o materiales tengo en inventario?', intent: INTENTS.METRICAS_INVENTARIO },
-  { text: 'resumen del stock del taller', intent: INTENTS.METRICAS_INVENTARIO },
-  { text: 'cuál es el valor de mi inventario', intent: INTENTS.METRICAS_INVENTARIO },
-  { text: 'qué materiales tienen stock bajo o crítico', intent: INTENTS.METRICAS_INVENTARIO },
-  { text: 'cuántos insumos tengo registrados', intent: INTENTS.METRICAS_INVENTARIO },
-
-  // --- SALUDO Y AYUDA ---
+  // --- SALUDO Y AYUDA (11 ejemplos) ---
   { text: 'Hola, ¿qué puedes hacer?', intent: INTENTS.SALUDO_AYUDA },
   { text: 'Buenos días Pandi Copilot', intent: INTENTS.SALUDO_AYUDA },
   { text: 'Buenas tardes, necesito ayuda', intent: INTENTS.SALUDO_AYUDA },
   { text: '¿En qué me puedes colaborar hoy?', intent: INTENTS.SALUDO_AYUDA },
-  { text: 'Hola amigo', intent: INTENTS.SALUDO_AYUDA },
+  { text: 'Hola amigo pandi', intent: INTENTS.SALUDO_AYUDA },
+  { text: 'hola pandi buenos dias', intent: INTENTS.SALUDO_AYUDA },
+  { text: 'buenas noches pandi necesito orientacion', intent: INTENTS.SALUDO_AYUDA },
+  { text: 'que tal copilot me puedes orientar', intent: INTENTS.SALUDO_AYUDA },
+  { text: 'hola que funciones o herramientas tienes', intent: INTENTS.SALUDO_AYUDA },
+  { text: 'saludos pandi necesito ayuda con mi taller', intent: INTENTS.SALUDO_AYUDA },
+  { text: 'buen dia pandi asistente', intent: INTENTS.SALUDO_AYUDA },
 
-  // --- DESPEDIDA Y GRACIAS ---
+  // --- DESPEDIDA Y GRACIAS (10 ejemplos) ---
   { text: 'Muchas gracias por el consejo', intent: INTENTS.DESPEDIDA_GRACIAS },
   { text: 'Gracias Pandi, me ayudó mucho', intent: INTENTS.DESPEDIDA_GRACIAS },
   { text: 'Excelente recomendación, hasta luego', intent: INTENTS.DESPEDIDA_GRACIAS },
-  { text: 'Adiós, que tengas buen día', intent: INTENTS.DESPEDIDA_GRACIAS }
+  { text: 'Adiós, que tengas buen día', intent: INTENTS.DESPEDIDA_GRACIAS },
+  { text: 'muchisimas gracias por tu ayuda', intent: INTENTS.DESPEDIDA_GRACIAS },
+  { text: 'vale gracias nos vemos luego', intent: INTENTS.DESPEDIDA_GRACIAS },
+  { text: 'perfecto pandi muy agradecido', intent: INTENTS.DESPEDIDA_GRACIAS },
+  { text: 'gracias por las recomendaciones hasta luego', intent: INTENTS.DESPEDIDA_GRACIAS },
+  { text: 'muy util la orientacion chao', intent: INTENTS.DESPEDIDA_GRACIAS },
+  { text: 'muchas gracias amigo que tengas buen dia', intent: INTENTS.DESPEDIDA_GRACIAS }
 ]

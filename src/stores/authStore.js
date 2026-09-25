@@ -10,6 +10,21 @@ import {
 } from 'firebase/auth'
 import { doc, getDoc, setDoc } from 'firebase/firestore'
 
+/**
+ * Determina si el modo demo está explícitamente habilitado
+ * mediante la variable de entorno VITE_DEMO_MODE=true.
+ * Nunca se activa como fallback silencioso.
+ */
+const DEMO_MODE = import.meta.env.VITE_DEMO_MODE === 'true'
+
+/**
+ * Verifica si Firebase Auth está correctamente configurado
+ * (apiKey presente y objeto auth inicializado).
+ */
+function isFirebaseConfigured() {
+  return !!(auth && auth.app && auth.app.options && auth.app.options.apiKey)
+}
+
 export const useAuthStore = defineStore('auth', () => {
   const user = ref({
     uid: '',
@@ -29,12 +44,15 @@ export const useAuthStore = defineStore('auth', () => {
   const isLoading = ref(false)
   const errorMessage = ref('')
 
+  /** Indica si la sesión actual opera en modo demo */
+  const isDemoMode = computed(() => DEMO_MODE)
+
   // Iniciar sesión con email y contraseña
   const login = async (email, password) => {
     isLoading.value = true
     errorMessage.value = ''
     try {
-      if (auth && auth.app.options.apiKey) {
+      if (isFirebaseConfigured()) {
         const userCredential = await signInWithEmailAndPassword(auth, email, password)
         const fbUser = userCredential.user
         user.value = {
@@ -43,14 +61,27 @@ export const useAuthStore = defineStore('auth', () => {
           email: fbUser.email,
           displayName: fbUser.displayName || user.value.displayName
         }
+        isAuthenticated.value = true
+        return true
+      } else if (DEMO_MODE) {
+        // Modo demostración explícito (VITE_DEMO_MODE=true)
+        console.info('[Auth] Modo demo activado explícitamente. Sesión simulada.')
+        user.value = {
+          ...user.value,
+          uid: 'demo-user-1',
+          email: email
+        }
+        isAuthenticated.value = true
+        return true
       } else {
-        // Modo demostración offline/local
-        user.value.email = email
+        // Firebase no configurado y modo demo no habilitado → error claro
+        throw new Error(
+          'Firebase Auth no está configurado correctamente (falta apiKey). ' +
+          'Configura las variables de entorno de Firebase o activa el modo demo con VITE_DEMO_MODE=true.'
+        )
       }
-      isAuthenticated.value = true
-      return true
     } catch (error) {
-      console.warn('Firebase auth error, usando fallback seguro:', error)
+      console.error('Error de autenticación:', error)
       errorMessage.value = error.message || 'Error al iniciar sesión. Revisa tus credenciales.'
       return false
     } finally {
@@ -63,7 +94,7 @@ export const useAuthStore = defineStore('auth', () => {
     isLoading.value = true
     errorMessage.value = ''
     try {
-      if (auth && auth.app.options.apiKey) {
+      if (isFirebaseConfigured()) {
         const provider = new GoogleAuthProvider()
         const result = await signInWithPopup(auth, provider)
         const fbUser = result.user
@@ -74,11 +105,25 @@ export const useAuthStore = defineStore('auth', () => {
           displayName: fbUser.displayName || user.value.displayName,
           avatarUrl: fbUser.photoURL || user.value.avatarUrl
         }
+        isAuthenticated.value = true
+        return true
+      } else if (DEMO_MODE) {
+        console.info('[Auth] Modo demo activado explícitamente. Sesión Google simulada.')
+        user.value = {
+          ...user.value,
+          uid: 'demo-user-1',
+          email: 'demo@pandibuy.local'
+        }
+        isAuthenticated.value = true
+        return true
+      } else {
+        throw new Error(
+          'Firebase Auth no está configurado correctamente (falta apiKey). ' +
+          'Configura las variables de entorno de Firebase o activa el modo demo con VITE_DEMO_MODE=true.'
+        )
       }
-      isAuthenticated.value = true
-      return true
     } catch (error) {
-      console.warn('Google auth error:', error)
+      console.error('Error de autenticación con Google:', error)
       errorMessage.value = error.message || 'No se pudo iniciar sesión con Google.'
       return false
     } finally {
@@ -89,7 +134,7 @@ export const useAuthStore = defineStore('auth', () => {
   // Cerrar sesión
   const logout = async () => {
     try {
-      if (auth && auth.app.options.apiKey) {
+      if (isFirebaseConfigured()) {
         await signOut(auth)
       }
     } catch (e) {
@@ -115,6 +160,7 @@ export const useAuthStore = defineStore('auth', () => {
     user,
     isAuthenticated,
     isLoading,
+    isDemoMode,
     errorMessage,
     login,
     loginWithGoogle,
